@@ -1,0 +1,92 @@
+# Analyz Configuration File
+
+# Application Settings
+app:
+  name: "Analyz"
+  version: "1.0.0"
+  log_level: "INFO"
+  output_dir: "outputs"
+  temp_dir: "temp"
+
+# Processing Settings
+processing:
+  max_memory_mb: 4096
+  num_threads: 4
+  chunk_size: 1024
+  resampling_method: "bilinear"  # nearest, bilinear, cubic, lanczos
+
+# Optical Analysis Settings
+optical:
+  default_bands:
+    red: 3
+    green: 2
+    blue: 1
+    nir: 4
+    swir1: 5
+    swir2: 6
+  
+  ndvi:
+    threshold_low: 0.2
+    threshold_high: 0.8
+  
+  ndwi:
+    threshold: 0.0
+  
+  classification:
+    method: "kmeans"  # kmeans, random_forest, svm
+    n_clusters: 5
+    max_iter: 100
+
+# SAR Analysis Settings
+sar:
+  speckle_filter:
+    default_filter: "lee"  # lee, frost, gamma_map, median
+    window_size: 5
+    num_looks: 1
+  
+  coherence:
+    window_size: 5
+    threshold: 0.3
+  
+  change_detection:
+    threshold_method: "otsu"  # otsu, manual, adaptive
+    manual_threshold: 3.0
+
+# Visualization Settings
+visualization:
+  dpi: 300
+  figure_size: [12, 8]
+  colormap: "RdYlGn"
+  save_format: "png"  # png, jpg, pdf, svg
+  interactive: false
+  
+  plot_types:
+    - "histogram"
+    - "map"
+    - "time_series"
+    - "statistics"
+
+# Insights Settings
+insights:
+  generate_statistics: true
+  generate_interpretation: true
+  confidence_level: 0.95
+  export_format: "pdf"  # pdf, html, markdown
+
+# Study Area Settings
+study_area:
+  supported_formats:
+    - "geojson"
+    - "shp"
+    - "gpkg"
+    - "kml"
+  buffer_distance: 0  # meters
+  validate_geometry: true
+
+# Export Settings
+export:
+  compression: "LZW"
+  tiled: true
+  tile_size: 256
+  overview_levels: [2, 4, 8, 16]
+  metadata: true

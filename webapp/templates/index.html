@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Welcome to Analyz</h1>
+    <p class="hero-subtitle">Comprehensive Optical and SAR Image Analysis Platform</p>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary btn-large">Start Analysis</a>
+</div>
+
+<div class="features">
+    <div class="feature-card">
+        <div class="feature-icon">🛰️</div>
+        <h3>Optical Analysis</h3>
+        <ul>
+            <li>NDVI - Vegetation Health</li>
+            <li>NDWI - Water Detection</li>
+            <li>NDBI - Urban Mapping</li>
+            <li>EVI & SAVI - Enhanced Indices</li>
+            <li>Land Cover Classification</li>
+        </ul>
+    </div>
+
+    <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <h3>SAR Analysis</h3>
+        <ul>
+            <li>Speckle Filtering (Lee, Frost)</li>
+            <li>Backscatter Analysis</li>
+            <li>Texture Analysis (GLCM)</li>
+            <li>Flood Mapping</li>
+            <li>Change Detection</li>
+        </ul>
+    </div>
+
+    <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Automated Insights</h3>
+        <ul>
+            <li>Statistical Analysis</li>
+            <li>Automated Interpretation</li>
+            <li>Professional Visualizations</li>
+            <li>Boundary Clipping</li>
+            <li>Export Results</li>
+        </ul>
+    </div>
+</div>
+
+<div class="how-it-works">
+    <h2>How It Works</h2>
+    <div class="steps">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h4>Upload Image</h4>
+            <p>Upload your optical or SAR satellite imagery (GeoTIFF format)</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <h4>Select Analysis</h4>
+            <p>Choose from various analysis types and configure parameters</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <h4>Get Results</h4>
+            <p>View visualizations, statistics, and download processed data</p>
+        </div>
+    </div>
+</div>
+
+<div class="cta-section">
+    <h2>Ready to Analyze Your Imagery?</h2>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary btn-large">Get Started Now</a>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Analyz{% endblock %} - Image Analysis Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">🌍</span>
+                <h1>Analyz</h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('upload') }}">New Analysis</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                        <button class="close-alert" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Analyz - Optical and SAR Image Analysis Platform</p>
+            <p>Version 1.0.0 | Created by Proforce Galaxies Limited</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

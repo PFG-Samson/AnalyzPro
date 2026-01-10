@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Upload & Configure{% endblock %}
+
+{% block content %}
+<div class="upload-section">
+    <h1>Upload Image & Configure Analysis</h1>
+    <p class="subtitle">Select your satellite imagery and analysis parameters</p>
+
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+        <!-- Image Type Selection -->
+        <div class="form-group">
+            <label for="image_type" class="required">Image Type</label>
+            <select id="image_type" name="image_type" required onchange="updateAnalysisOptions()">
+                <option value="">-- Select Image Type --</option>
+                <option value="optical">Optical (Sentinel-2, Landsat, etc.)</option>
+                <option value="sar">SAR (Sentinel-1, RADARSAT, etc.)</option>
+            </select>
+        </div>
+
+        <!-- File Uploads -->
+        <div class="form-group">
+            <label for="image" class="required">Satellite Data File</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="image" name="image" accept=".zip,.tar,.tar.gz,.tif,.tiff,.SAFE" required onchange="updateFileName(this)">
+                <span class="file-name">No file selected</span>
+            </div>
+            <small>Supported: Landsat (.tar, .tar.gz, .zip), Sentinel-2 (.zip, .SAFE), or processed GeoTIFF (.tif, .tiff). Maximum file size: 2GB</small>
+        </div>
+
+        <div class="form-group">
+            <label for="boundary">Study Area Boundary (optional)</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="boundary" name="boundary" accept=".geojson,.json,.shp,.gpkg,.kml" onchange="updateFileName(this)">
+                <span class="file-name">No file selected</span>
+            </div>
+            <small>Supported: GeoJSON, Shapefile, GeoPackage, KML</small>
+        </div>
+
+        <!-- Analysis Type -->
+        <div class="form-group">
+            <label for="analysis_type" class="required">Analysis Type</label>
+            <select id="analysis_type" name="analysis_type" required>
+                <option value="">-- First select image type --</option>
+            </select>
+        </div>
+
+        <!-- Optical Parameters -->
+        <div id="optical_params" style="display: none;">
+            <div class="form-group">
+                <label for="sensor">Sensor (optional)</label>
+                <select id="sensor" name="sensor">
+                    <option value="">Auto-detect from bands</option>
+                    <option value="sentinel2">Sentinel-2</option>
+                    <option value="landsat8">Landsat 8</option>
+                    <option value="landsat9">Landsat 9</option>
+                </select>
+                <small>Used to validate index availability (e.g., red-edge indices require Sentinel-2).</small>
+            </div>
+
+            <div id="classification_params" style="display: none;">
+                <h3>Classification Parameters</h3>
+                <div class="form-group">
+                    <label for="n_clusters">Number of Classes</label>
+                    <input type="number" id="n_clusters" name="n_clusters" value="5" min="2" max="20">
+                    <small>Number of land cover classes to identify</small>
+                </div>
+            </div>
+            
+            <div id="rgb_params" style="display: none;">
+                <h3>RGB Composite Parameters</h3>
+                <div class="form-group">
+                    <label for="stretch_method">Contrast Stretch Method</label>
+                    <select id="stretch_method" name="stretch_method">
+                        <option value="percentile" selected>Percentile (Recommended)</option>
+                        <option value="minmax">Min-Max</option>
+                        <option value="std">Standard Deviation</option>
+                    </select>
+                    <small>Percentile stretch (2-98%) provides best visual results</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- COG Parameters (shown when analysis_type = 'cog') -->
+        <div id="cog_params" style="display: none;">
+            <h3>COG Conversion Options</h3>
+            <div class="form-group">
+                <label><input type="checkbox" id="cog_web_mercator" name="cog_web_mercator" value="1"> Reproject to Web Mercator (EPSG:3857)</label>
+                <small>Recommended for web maps. Leave unchecked to preserve original CRS.</small>
+            </div>
+            <div class="form-group">
+                <label for="cog_epsg">Target EPSG (optional)</label>
+                <input type="number" id="cog_epsg" name="cog_epsg" min="2000" max="900000" placeholder="e.g., 3857">
+                <small>Overrides the Web Mercator option if provided.</small>
+            </div>
+        </div>
+
+        <!-- SAR Parameters -->
+        <div id="sar_params" style="display: none;">
+            <h3>SAR Processing Parameters</h3>
+
+            <!-- Detected sensor/band badge -->
+            <div id="sar_detect_badge" style="display:none; margin: 0.5rem 0 0.75rem 0;">
+                <span id="det_sensor_badge" style="display:inline-block; background:#e6f0ff; color:#1e40af; padding:0.25rem 0.5rem; border-radius:0.375rem; margin-right:0.5rem; font-size:0.9rem;">
+                    Sensor: —
+                </span>
+                <span id="det_band_badge" style="display:inline-block; background:#f1f5f9; color:#0f172a; padding:0.25rem 0.5rem; border-radius:0.375rem; font-size:0.9rem;">
+                    Band: —
+                </span>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="window_size">Filter Window Size</label>
+                    <input type="number" id="window_size" name="window_size" value="5" min="3" max="11" step="2">
+                    <small>Odd numbers only (3, 5, 7, 9, 11)</small>
+                </div>
+                <div class="form-group">
+                    <label for="num_looks">Number of Looks</label>
+                    <input type="number" id="num_looks" name="num_looks" value="1" min="1">
+                    <small>For multi-look SAR processing</small>
+                </div>
+            </div>
+            
+            <div id="soil_moisture_params" style="display: none;">
+                <div class="form-group">
+                    <label for="incidence_angle">Radar Incidence Angle (°)</label>
+                    <input type="number" id="incidence_angle" name="incidence_angle" value="39" min="20" max="50" step="0.1">
+                    <small>Default: 39° for Sentinel-1. Check metadata for exact value.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                <span>🚀 Start Analysis</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="info-panel">
+    <h3>💡 Tips</h3>
+    <ul>
+        <li><strong>Optical Sensors:</strong> Sentinel-2, Landsat 8/9 - Upload compressed archives (.zip, .tar.gz) or processed GeoTIFF</li>
+        <li><strong>SAR Sensors:</strong> Sentinel-1, RADARSAT, TerraSAR-X - Upload GeoTIFF format</li>
+        <li><strong>Band Detection:</strong> App automatically detects and processes bands from satellite archives</li>
+        <li><strong>Study Area:</strong> Optional boundary file clips results to your area of interest</li>
+        <li><strong>Processing Time:</strong> Large archives (1-2GB) may take several minutes to process</li>
+        <li><strong>Results:</strong> Download outputs in multiple formats (.tif, .png, .pdf, .csv, .zip)</li>
+    </ul>
+</div>
+
+<script>
+const opticalAnalyses = {
+    'cog': '☁️ Convert to COG (Web Map Ready)',
+    'band_stack': '📚 Multi-Band Stack Composite',
+    'rgb': '🖼️ RGB True Color Composite',
+    // Core indices (Full name with acronym)
+    'ndvi': 'Normalized Difference Vegetation Index (NDVI)',
+'evi': 'Enhanced Vegetation Index (EVI)',
+    'evi2': 'Enhanced Vegetation Index, 2-band (EVI2)',
+    'savi': 'Soil-Adjusted Vegetation Index (SAVI)',
+    'osavi': 'Optimized Soil-Adjusted Vegetation Index (OSAVI)',
+    'msavi': 'Modified Soil-Adjusted Vegetation Index (MSAVI)',
+    'gndvi': 'Green Normalized Difference Vegetation Index (GNDVI)',
+    'sr': 'Simple Ratio (SR)',
+    'dvi': 'Difference Vegetation Index (DVI)',
+    'rdvi': 'Renormalized Difference Vegetation Index (RDVI)',
+    'ipvi': 'Infrared Percentage Vegetation Index (IPVI)',
+    'mcari': 'Modified Chlorophyll Absorption in Reflectance Index (MCARI)',
+    'mtvi2': 'Modified Triangular Vegetation Index 2 (MTVI2)',
+    'tcari': 'Transformed Chlorophyll Absorption Ratio Index (TCARI)',
+    'tcari_osavi_ratio': 'TCARI/OSAVI Ratio',
+    'ndvi705': 'Red-Edge NDVI at 705 nm (NDVI705)',
+    'ndre': 'Normalized Difference Red Edge (NDRE)',
+    'ndvire': 'Red-Edge Normalized Difference Vegetation Index (NDVIre)',
+    'cirededge': 'Chlorophyll Index Red Edge (CIrededge)',
+    // Water & moisture
+    'ndwi': 'Normalized Difference Water Index (NDWI)',
+    'mndwi': 'Modified Normalized Difference Water Index (MNDWI)',
+    'ndwi2': 'Normalized Difference Water Index 2 (NDWI2)',
+    'ndmi': 'Normalized Difference Moisture Index (NDMI)',
+    'msi': 'Moisture Stress Index (MSI)',
+    'gvmi': 'Global Vegetation Moisture Index (GVMI)',
+    'lswi': 'Land Surface Water Index (LSWI)',
+    // Built-up / soil / color
+    'ndbi': 'Normalized Difference Built-up Index (NDBI)',
+    'bsi': 'Bare Soil Index (BSI)',
+    'slavi': 'Soil Line Adjusted Vegetation Index (SLAVI)',
+    'ndgi': 'Normalized Difference Greenness Index (NDGI)',
+    'rgr': 'Red/Green Ratio (RGR)',
+    'vig': 'Visible Greenness Index (VIG)',
+    // Burn / snow
+    'bai': 'Burned Area Index (BAI)',
+    'baim': 'Burned Area Index, Modified (BAIM)',
+    'nbr': 'Normalized Burn Ratio (NBR)',
+    'nbr2': 'Normalized Burn Ratio 2 (NBR2)',
+    'ndsi': 'Normalized Difference Snow Index (NDSI)',
+    // Others
+    'gci': 'Green Chlorophyll Index (GCI)',
+    'cvi': 'Chlorophyll Vegetation Index (CVI)',
+    'sipi': 'Structure Insensitive Pigment Index (SIPI)',
+    'gemi': 'Global Environmental Monitoring Index (GEMI)',
+    'lai': 'Leaf Area Index (LAI)',
+    'tsavi': 'Transformed Soil-Adjusted Vegetation Index (TSAVI)',
+    'msr': 'Modified Simple Ratio (MSR)',
+    // Classification
+    'classification': 'Land Cover Classification'
+};
+
+const sarAnalyses = {
+    'cog': '☁️ Convert to COG (Web Map Ready)',
+    'oil_spill': '🛢️ Oil Spill Detection',
+    'ship_detection': '🚢 Ship Detection',
+    'crop_monitoring': '🌾 Crop Monitoring (RVI)',
+    'land_cover': '🗺️ Land Cover Classification',
+    'biomass': '🌲 Biomass Estimation',
+    'geology': '⛰️ Geology & Terrain Analysis',
+    'flood_mapping': '🌊 Flood Mapping',
+    'polarimetric': '📡 Polarimetric Analysis (VV/VH)',
+    'soil_moisture': '💧 Soil Moisture Estimation'
+};
+
+function updateAnalysisOptions() {
+    const imageType = document.getElementById('image_type').value;
+    const analysisSelect = document.getElementById('analysis_type');
+    const opticalParams = document.getElementById('optical_params');
+    const sarParams = document.getElementById('sar_params');
+    const sarDetectBadge = document.getElementById('sar_detect_badge');
+    
+    // Clear existing options
+    analysisSelect.innerHTML = '<option value="">-- Select Analysis Type --</option>';
+    
+    // Hide all parameter sections
+    opticalParams.style.display = 'none';
+    sarParams.style.display = 'none';
+    if (sarDetectBadge) sarDetectBadge.style.display = 'none';
+    
+    if (imageType === 'optical') {
+        Object.entries(opticalAnalyses).forEach(([value, text]) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = text;
+            analysisSelect.appendChild(option);
+        });
+        opticalParams.style.display = 'block';
+    } else if (imageType === 'sar') {
+        Object.entries(sarAnalyses).forEach(([value, text]) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = text;
+            analysisSelect.appendChild(option);
+        });
+        sarParams.style.display = 'block';
+    }
+}
+
+// Show parameters when specific analysis types are selected
+document.getElementById('analysis_type').addEventListener('change', function() {
+    const classificationParams = document.getElementById('classification_params');
+    const rgbParams = document.getElementById('rgb_params');
+    const soilMoistureParams = document.getElementById('soil_moisture_params');
+    const cogParams = document.getElementById('cog_params');
+    
+    // Handle optical classification params
+    if (this.value === 'classification') {
+        classificationParams.style.display = 'block';
+    } else {
+        classificationParams.style.display = 'none';
+    }
+    
+    // Handle optical RGB params
+    if (this.value === 'rgb') {
+        rgbParams.style.display = 'block';
+    } else {
+        rgbParams.style.display = 'none';
+    }
+    
+    // Handle SAR soil moisture params
+    if (this.value === 'soil_moisture') {
+        soilMoistureParams.style.display = 'block';
+    } else {
+        soilMoistureParams.style.display = 'none';
+    }
+
+    // Handle COG params visibility
+    if (this.value === 'cog') {
+        cogParams.style.display = 'block';
+    } else {
+        cogParams.style.display = 'none';
+    }
+});
+
+// Initialize options on load
+window.addEventListener('DOMContentLoaded', () => {
+    updateAnalysisOptions();
+});
+
+function detectSarFromFilename(name) {
+    const n = (name || '').toUpperCase();
+    if (!n) return { sensor: 'Unknown', band: 'VV' };
+    if (n.includes('CAPELLA')) return { sensor: 'Capella', band: 'HH' };
+    if (n.includes('S1') || n.includes('SENTINEL-1') || n.includes('SENTINEL1')) return { sensor: 'Sentinel-1', band: 'VV' };
+    if (n.includes('RADARSAT') || n.includes('RS2')) return { sensor: 'RADARSAT-2', band: 'HH' };
+    if (n.endsWith('.TIF') || n.endsWith('.TIFF') || n.includes('GEOTIFF')) return { sensor: 'SAR (GeoTIFF)', band: 'VV' };
+    return { sensor: 'Unknown', band: 'VV' };
+}
+
+function showSarBadgeIfApplicable(fileName) {
+    const imageType = document.getElementById('image_type')?.value;
+    const badge = document.getElementById('sar_detect_badge');
+    const sensorEl = document.getElementById('det_sensor_badge');
+    const bandEl = document.getElementById('det_band_badge');
+    if (!badge || imageType !== 'sar') {
+        if (badge) badge.style.display = 'none';
+        return;
+    }
+    const det = detectSarFromFilename(fileName);
+    if (sensorEl) sensorEl.textContent = `Sensor: ${det.sensor}`;
+    if (bandEl) bandEl.textContent = `Band: ${det.band}`;
+    badge.style.display = 'block';
+}
+
+function updateFileName(input) {
+    const fileName = input.files[0] ? input.files[0].name : 'No file selected';
+    input.parentElement.querySelector('.file-name').textContent = fileName;
+    showSarBadgeIfApplicable(fileName);
+}
+</script>
+{% endblock %}

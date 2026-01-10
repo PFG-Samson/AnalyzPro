@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Results{% endblock %}
+
+{% block content %}
+<div class="results-section">
+    <h1>Analysis Results</h1>
+    
+    <div id="statusPanel" class="status-panel">
+        <h3>Status: <span id="statusText">Loading...</span></h3>
+        <p id="statusMessage" style="font-style: italic; color: #666; margin-top: 0.5rem;"></p>
+        <div class="progress-bar">
+            <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+        </div>
+        <p id="progressText">0%</p>
+    </div>
+
+    <div id="errorPanel" class="error-panel" style="display: none;">
+        <h3>❌ Analysis Failed</h3>
+        <p id="errorMessage"></p>
+    </div>
+
+    <div id="resultsContent" style="display: none;">
+        <div class="results-grid">
+            <!-- Visualizations -->
+            <div class="result-card" id="plotCard" style="display:none;">
+                <h3>📊 Visualization</h3>
+                <img id="plotImage" src="" alt="Analysis Plot" class="result-image">
+                <button class="btn btn-secondary" onclick="downloadFile('plot')">Download Plot</button>
+            </div>
+
+            <div class="result-card" id="histCard" style="display:none;">
+                <h3>📈 Distribution</h3>
+                <img id="histImage" src="" alt="Histogram" class="result-image">
+                <button class="btn btn-secondary" onclick="downloadFile('histogram')">Download Histogram</button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="result-card stats-card">
+            <h3>📋 Statistics</h3>
+            <div id="statsContent"></div>
+            <button class="btn btn-secondary" onclick="downloadFile('statistics')">Download Statistics (JSON)</button>
+        </div>
+
+        <!-- Insights -->
+        <div class="result-card insights-card" id="insightsCard" style="display: none;">
+            <h3>💡 Automated Insights</h3>
+            <div id="insightsContent"></div>
+            <button class="btn btn-secondary" onclick="downloadFile('insights')">Download Insights Report</button>
+        </div>
+
+        <!-- Download All -->
+        <div class="download-section">
+            <h3>📥 Download Results</h3>
+            <div id="downloadButtons">
+                <!-- Populated by JS based on available files -->
+            </div>
+            <button class="btn btn-secondary" id="vectorsBtn" style="display:none; margin-left:0.5rem;" onclick="downloadFile('vectors')">Download Detections (GeoJSON)</button>
+        </div>
+
+        <!-- Cleanup Section -->
+        <div class="cleanup-section" style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+            <h3>🗑️ Clean Up Files</h3>
+            <p style="color: #856404;">When you're done downloading, click below to remove all temporary and result files from the server.</p>
+            <button onclick="cleanupSessionOnly()" class="btn btn-warning" style="background: #ffc107; color: #000;">Clean Up All Files</button>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="window.location.href='{{ url_for('upload') }}'" class="btn btn-primary">New Analysis</button>
+            <button onclick="window.location.href='{{ url_for('index') }}'" class="btn btn-secondary">Home</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const sessionId = '{{ session_id }}';
+const uploadUrl = '{{ url_for('upload') }}';
+const indexUrl = '{{ url_for('index') }}';
+let statusCheckInterval;
+
+function checkStatus() {
+    fetch(`/api/status/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+            updateStatus(data);
+        })
+        .catch(error => {
+            console.error('Error checking status:', error);
+        });
+}
+
+function updateStatus(data) {
+    const statusText = document.getElementById('statusText');
+    const statusMessage = document.getElementById('statusMessage');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const resultsContent = document.getElementById('resultsContent');
+    const errorPanel = document.getElementById('errorPanel');
+    
+    // Update progress message if available
+    if (data.message) {
+        statusMessage.textContent = data.message;
+    }
+    
+    if (data.status === 'queued') {
+        statusText.textContent = '⏳ Queued - Waiting to start...';
+        statusText.className = 'status-queued';
+    } else if (data.status === 'preprocessing') {
+        statusText.textContent = '📦 Extracting satellite data...';
+        statusText.className = 'status-processing';
+        const progress = data.progress || 0;
+        progressFill.style.width = progress + '%';
+        progressText.textContent = progress + '%';
+    } else if (data.status === 'processing') {
+        statusText.textContent = '🔬 Running analysis...';
+        statusText.className = 'status-processing';
+        const progress = data.progress || 0;
+        progressFill.style.width = progress + '%';
+        progressText.textContent = progress + '%';
+    } else if (data.status === 'completed') {
+        statusText.textContent = 'Completed';
+        statusText.className = 'status-completed';
+        progressFill.style.width = '100%';
+        progressText.textContent = '100%';
+        
+        clearInterval(statusCheckInterval);
+        displayResults(data);
+    } else if (data.status === 'failed') {
+        statusText.textContent = 'Failed';
+        statusText.className = 'status-failed';
+        clearInterval(statusCheckInterval);
+        
+        errorPanel.style.display = 'block';
+        document.getElementById('errorMessage').textContent = data.error || 'Unknown error occurred';
+    }
+}
+
+function displayResults(data) {
+    const resultsContent = document.getElementById('resultsContent');
+    resultsContent.style.display = 'block';
+    
+    // Display plot if available
+    if (data.result_files && data.result_files.plot) {
+        const plotImg = document.getElementById('plotImage');
+        plotImg.src = `/api/view/${sessionId}/${data.result_files.plot}`;
+        document.getElementById('plotCard').style.display = 'block';
+    }
+    
+    // Display histogram if available
+    if (data.result_files && data.result_files.histogram) {
+        const histImg = document.getElementById('histImage');
+        histImg.src = `/api/view/${sessionId}/${data.result_files.histogram}`;
+        document.getElementById('histCard').style.display = 'block';
+    }
+    
+    // Build download buttons
+    const dl = document.getElementById('downloadButtons');
+    dl.innerHTML = '';
+    if (data.result_files) {
+        if (data.result_files.result) {
+            // Special handling for classification - show both GeoTIFF and GeoJSON
+            if (data.analysis_type === 'classification' && data.image_type === 'optical') {
+                dl.innerHTML += '<button class="btn btn-primary" onclick="downloadFile(\'result\')">Download Classification (GeoTIFF)</button>';
+                if (data.result_files.polygons) {
+                    dl.innerHTML += '<button class="btn btn-primary" style="margin-left:0.5rem;" onclick="downloadFile(\'polygons\')">Download Polygons (GeoJSON)</button>';
+                }
+            } else {
+                dl.innerHTML += '<button class="btn btn-primary" onclick="downloadFile(\'result\')">Download Result (GeoTIFF)</button>';
+            }
+        }
+        if (data.result_files.cog) {
+            dl.innerHTML += '<button class="btn btn-primary" style="margin-left:0.5rem;" onclick="downloadFile(\'cog\')">Download COG (GeoTIFF)</button>';
+        }
+    }
+    
+    // Toggle vectors button if present
+    if (data.result_files && data.result_files.vectors) {
+        document.getElementById('vectorsBtn').style.display = 'inline-block';
+    }
+
+    // Load and display statistics
+    fetch(`/api/view/${sessionId}/statistics.json`)
+        .then(response => response.json())
+        .then(stats => {
+            displayStatistics(stats);
+        });
+    
+    // Load insights if available
+    if (data.result_files.insights) {
+        fetch(`/api/view/${sessionId}/insights.txt`)
+            .then(response => response.text())
+            .then(insights => {
+                if (insights && insights.trim()) {
+                    document.getElementById('insightsCard').style.display = 'block';
+                    document.getElementById('insightsContent').innerHTML = 
+                        '<pre>' + escapeHtml(insights) + '</pre>';
+                }
+            });
+    }
+}
+
+function displayStatistics(stats) {
+    const statsContent = document.getElementById('statsContent');
+    let html = '<table class="stats-table">';
+    
+    for (const [key, value] of Object.entries(stats)) {
+        if (typeof value === 'object') {
+            html += `<tr><td colspan="2"><strong>${formatKey(key)}</strong></td></tr>`;
+            for (const [subKey, subValue] of Object.entries(value)) {
+                html += `<tr><td>${formatKey(subKey)}</td><td>${formatValue(subValue)}</td></tr>`;
+            }
+        } else {
+            html += `<tr><td>${formatKey(key)}</td><td>${formatValue(value)}</td></tr>`;
+        }
+    }
+    
+    html += '</table>';
+    statsContent.innerHTML = html;
+}
+
+function formatKey(key) {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function formatValue(value) {
+    if (typeof value === 'number') {
+        return value.toFixed(4);
+    }
+    return value;
+}
+
+function downloadFile(fileType) {
+    let filename;
+    
+    if (fileType === 'result') {
+        filename = 'result.tif';
+    } else if (fileType === 'cog') {
+        filename = 'result_cog.tif';
+    } else if (fileType === 'statistics') {
+        filename = 'statistics.json';
+    } else if (fileType === 'insights') {
+        filename = 'insights.txt';
+    } else if (fileType === 'polygons') {
+        // For polygons, get filename from result files
+        fetch(`/api/status/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.result_files && data.result_files.polygons) {
+                    filename = data.result_files.polygons;
+                    window.location.href = `/api/download/${sessionId}/${filename}`;
+                } else {
+                    alert('No polygons available for this analysis.');
+                }
+            });
+        return;
+    } else {
+        // For plot/histogram/vectors, get filename from result files
+        fetch(`/api/status/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.result_files) {
+                    if (fileType === 'plot') {
+                        filename = data.result_files.plot;
+                    } else if (fileType === 'histogram') {
+                        filename = data.result_files.histogram;
+                    } else if (fileType === 'vectors') {
+                        if (!data.result_files.vectors) { alert('No vectors available for this analysis.'); return; }
+                        filename = data.result_files.vectors;
+                    }
+                    if (filename) window.location.href = `/api/download/${sessionId}/${filename}`;
+                }
+            });
+        return;
+    }
+    
+    window.location.href = `/api/download/${sessionId}/${filename}`;
+}
+
+function cleanupSession() {
+    return fetch(`/api/cleanup/${sessionId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Cleanup completed:', data);
+        return data;
+    })
+    .catch(error => {
+        console.error('Cleanup failed:', error);
+    });
+}
+
+function cleanupSessionOnly() {
+    if (confirm('This will permanently delete all result and temporary files for this analysis. Are you sure?')) {
+        cleanupSession().then((data) => {
+            if (data && data.status === 'success') {
+                alert('All files have been cleaned up successfully!');
+                // Hide the cleanup section and results
+                document.getElementById('resultsContent').innerHTML = 
+                    '<div style="text-align: center; padding: 2rem;">' +
+                    '<h3>Files Cleaned Up</h3>' +
+                    '<p>All analysis files have been removed from the server.</p>' +
+                    '<button onclick="window.location.href=\'' + uploadUrl + '\'" class="btn btn-primary">New Analysis</button> ' +
+                    '<button onclick="window.location.href=\'' + indexUrl + '\'" class="btn btn-secondary">Home</button>' +
+                    '</div>';
+            } else {
+                alert('Cleanup failed. Please try again.');
+            }
+        });
+    }
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Start checking status
+checkStatus();
+statusCheckInterval = setInterval(checkStatus, 2000); // Check every 2 seconds
+
+// Periodically update status data in the background
+setInterval(() => {
+    fetch(`/api/status/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'completed') {
+                sessionStorage.setItem('statusData', JSON.stringify(data));
+            }
+        });
+}, 2000);
+</script>
+{% endblock %}

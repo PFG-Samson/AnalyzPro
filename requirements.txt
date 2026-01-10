@@ -1,0 +1,48 @@
+# Core image processing libraries
+numpy>=1.24.0
+rasterio>=1.3.0
+gdal>=3.6.0
+opencv-python>=4.8.0
+
+# Geospatial libraries
+geopandas>=0.14.0
+shapely>=2.0.0
+fiona>=1.9.0
+pyproj>=3.6.0
+
+# SAR processing
+sarpy>=1.3.0
+scipy>=1.11.0
+
+# Machine learning and classification
+scikit-learn>=1.3.0
+scikit-image>=0.21.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.17.0
+
+# Data handling
+pandas>=2.0.0
+xarray>=2023.1.0
+
+# Progress and logging
+tqdm>=4.66.0
+loguru>=0.7.0
+
+# GUI (optional)
+pillow>=10.0.0
+
+
+# Reports
+reportlab>=4.0.0
+jinja2>=3.1.0
+
+# Web Application
+flask>=3.0.0
+werkzeug>=3.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
