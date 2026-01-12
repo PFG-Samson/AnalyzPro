@@ -1,57 +1,137 @@
-# Analyz Usage Guide
+
+# Analyz API & Usage Guide
 
 Complete guide for using the Analyz optical and SAR image analysis application.
 
 ## Table of Contents
 1. [Installation](#installation)
-2. [Quick Start](#quick-start)
-3. [Optical Analysis](#optical-analysis)
-4. [SAR Analysis](#sar-analysis)
-5. [Study Area Boundaries](#study-area-boundaries)
-6. [Configuration](#configuration)
-7. [Command Line Interface](#command-line-interface)
-8. [Python API](#python-api)
+2. [Python API](#python-api)
+3. [Command Line Interface](#command-line-interface)
+4. [Optical Analysis](#optical-analysis)
+5. [SAR Analysis](#sar-analysis)
+6. [Study Area Boundaries](#study-area-boundaries)
+7. [Configuration](#configuration)
+8. [Troubleshooting](#troubleshooting)
 
 ## Installation
 
 ```powershell
 # Navigate to project directory
-cd automatedAnalysis
+cd Analyz-STAC
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
-## Quick Start
+## Python API
 
-### Command Line - NDVI Analysis
-```powershell
-python app.py --image "C:\path\to\optical.tif" `
-              --image-type optical `
-              --analysis ndvi `
-              --boundary "C:\path\to\boundary.geojson" `
-              --output "outputs\ndvi_analysis"
+### Complete Workflow Example
+
+```python
+from pathlib import Path
+from analyz import *
+
+# Setup
+setup_logger("INFO", "analysis.log")
+output_dir = Path("outputs")
+output_dir.mkdir(exist_ok=True)
+
+# Load and clip image
+data, profile = FileHandler.read_raster("image.tif")
+boundary = BoundaryHandler("boundary.geojson")
+data, profile = boundary.clip_array(data, profile)
+
+# Optical analysis
+band_indices = {'red': 2, 'nir': 3, 'green': 1, 'blue': 0}
+optical = OpticalAnalyzer(data, band_indices)
+
+# Multiple indices
+ndvi, ndvi_stats = optical.ndvi()
+ndwi, ndwi_stats = optical.ndwi()
+ndbi, ndbi_stats = optical.ndbi()
+
+# Visualize
+Plotter.plot_multifigure(
+    [ndvi, ndwi, ndbi],
+    ['NDVI', 'NDWI', 'NDBI'],
+    ['RdYlGn', 'Blues', 'Reds'],
+    output_path=output_dir / "indices.png"
+)
+
+# Generate insights
+for idx_name, idx_data, idx_stats in [
+    ('ndvi', ndvi, ndvi_stats),
+    ('ndwi', ndwi, ndwi_stats)
+]:
+    if idx_name == 'ndvi':
+        insights = InsightsGenerator.generate_ndvi_insights(idx_data, idx_stats)
+    else:
+        insights = InsightsGenerator.generate_ndwi_insights(idx_data, idx_stats)
+    
+    InsightsGenerator.format_insights_report(
+        insights, 
+        output_dir / f"{idx_name}_insights.txt"
+    )
+
+# Save results
+FileHandler.write_raster(output_dir / "ndvi.tif", ndvi, profile)
+FileHandler.write_raster(output_dir / "ndwi.tif", ndwi, profile)
+FileHandler.write_raster(output_dir / "ndbi.tif", ndbi, profile)
 ```
 
-### Command Line - SAR Speckle Filtering
+## Command Line Interface
+
+### General Syntax
+
 ```powershell
-python app.py --image "C:\path\to\sar.tif" `
+python app.py --image <path> `
+              --image-type <optical|sar> `
+              --analysis <analysis_type> `
+              [--boundary <path>] `
+              [--output <dir>] `
+              [options]
+```
+
+### Quick Examples
+
+**NDVI Analysis:**
+```powershell
+python app.py --image "optical.tif" `
+              --image-type optical `
+              --analysis ndvi `
+              --boundary "study_area.geojson" `
+              --output "outputs\ndvi"
+```
+
+**SAR Speckle Filtering:**
+```powershell
+python app.py --image "sar.tif" `
               --image-type sar `
               --analysis lee_filter `
               --window-size 5 `
               --output "outputs\sar_filtered"
 ```
 
+**Land Cover Classification:**
+```powershell
+python app.py --image "optical.tif" `
+              --image-type optical `
+              --analysis classification `
+              --n-clusters 7 `
+              --boundary "aoi.geojson" `
+              --output "outputs\classification"
+```
+
 ## Optical Analysis
 
 ### Available Analyses
 
-1. **NDVI** - Vegetation health and coverage
+1. **NDVI** - Vegetation health and coverage with stress detection
 2. **NDWI** - Water body detection
 3. **NDBI** - Built-up/urban area mapping
 4. **EVI** - Enhanced vegetation monitoring
 5. **SAVI** - Soil-adjusted vegetation index
-6. **Classification** - Land cover classification
+6. **Classification** - Semantic land cover classification
 
 ### Example: NDVI Analysis
 
@@ -78,7 +158,7 @@ ndvi, stats = analyzer.ndvi()
 # Visualize
 Plotter.plot_ndvi_classification(ndvi, output_path="ndvi_result.png")
 
-# Generate insights
+# Generate insights (includes stress detection)
 insights = InsightsGenerator.generate_ndvi_insights(ndvi, stats)
 InsightsGenerator.format_insights_report(insights, "ndvi_report.txt")
 ```
@@ -117,10 +197,14 @@ band_indices = {
 2. **Frost Filter** - Edge-preserving speckle reduction
 3. **Median Filter** - Simple speckle reduction
 4. **Backscatter Analysis** - Intensity analysis in dB
-5. **Texture Analysis** - GLCM texture features
-6. **Coherence Estimation** - Temporal coherence
-7. **Flood Mapping** - Water detection
-8. **Change Detection** - Multi-temporal analysis
+5. **Polarimetric Analysis** - VV/VH ratio for feature discrimination
+6. **Soil Moisture Estimation** - 5-level soil moisture classification
+7. **Coherence Analysis** - Surface change detection
+8. **Flood Mapping** - Water detection
+9. **Change Detection** - Multi-temporal analysis
+10. **Oil Spill Detection** - Dark patch detection
+11. **Ship Detection** - Maritime surveillance
+12. **Crop Monitoring** - Agriculture monitoring with RVI
 
 ### Example: Speckle Filtering
 
@@ -227,119 +311,6 @@ visualization:
   colormap: "RdYlGn"
 ```
 
-## Command Line Interface
-
-### General Syntax
-
-```powershell
-python app.py --image <path> `
-              --image-type <optical|sar> `
-              --analysis <analysis_type> `
-              [--boundary <path>] `
-              [--output <dir>] `
-              [options]
-```
-
-### Optical Options
-
-```powershell
---band-indices "red:2,nir:3,green:1,blue:0"  # Custom band mapping
---n-clusters 5                                # For classification
-```
-
-### SAR Options
-
-```powershell
---window-size 5     # Filter window size
---num-looks 1       # Number of looks
-```
-
-### Examples
-
-**NDVI with custom bands:**
-```powershell
-python app.py --image sentinel2.tif `
-              --image-type optical `
-              --analysis ndvi `
-              --band-indices "red:2,nir:7,green:1,blue:0" `
-              --output outputs\ndvi
-```
-
-**Land cover classification:**
-```powershell
-python app.py --image optical.tif `
-              --image-type optical `
-              --analysis classification `
-              --n-clusters 7 `
-              --boundary aoi.geojson `
-              --output outputs\classification
-```
-
-**SAR flood mapping:**
-```powershell
-python app.py --image sar.tif `
-              --image-type sar `
-              --analysis flood_mapping `
-              --boundary flood_area.geojson `
-              --output outputs\flood
-```
-
-## Python API
-
-### Complete Workflow Example
-
-```python
-from pathlib import Path
-from analyz import *
-
-# Setup
-setup_logger("INFO", "analysis.log")
-output_dir = Path("outputs")
-output_dir.mkdir(exist_ok=True)
-
-# Load and clip image
-data, profile = FileHandler.read_raster("image.tif")
-boundary = BoundaryHandler("boundary.geojson")
-data, profile = boundary.clip_array(data, profile)
-
-# Optical analysis
-band_indices = {'red': 2, 'nir': 3, 'green': 1, 'blue': 0}
-optical = OpticalAnalyzer(data, band_indices)
-
-# Multiple indices
-ndvi, ndvi_stats = optical.ndvi()
-ndwi, ndwi_stats = optical.ndwi()
-ndbi, ndbi_stats = optical.ndbi()
-
-# Visualize
-Plotter.plot_multifigure(
-    [ndvi, ndwi, ndbi],
-    ['NDVI', 'NDWI', 'NDBI'],
-    ['RdYlGn', 'Blues', 'Reds'],
-    output_path=output_dir / "indices.png"
-)
-
-# Generate insights
-for idx_name, idx_data, idx_stats in [
-    ('ndvi', ndvi, ndvi_stats),
-    ('ndwi', ndwi, ndwi_stats)
-]:
-    if idx_name == 'ndvi':
-        insights = InsightsGenerator.generate_ndvi_insights(idx_data, idx_stats)
-    else:
-        insights = InsightsGenerator.generate_ndwi_insights(idx_data, idx_stats)
-    
-    InsightsGenerator.format_insights_report(
-        insights, 
-        output_dir / f"{idx_name}_insights.txt"
-    )
-
-# Save results
-FileHandler.write_raster(output_dir / "ndvi.tif", ndvi, profile)
-FileHandler.write_raster(output_dir / "ndwi.tif", ndwi, profile)
-FileHandler.write_raster(output_dir / "ndbi.tif", ndbi, profile)
-```
-
 ## Tips and Best Practices
 
 1. **Memory Management**: For large images, process in chunks or use the `max_memory_mb` config
@@ -362,5 +333,3 @@ FileHandler.write_raster(output_dir / "ndbi.tif", ndbi, profile)
 
 **Issue**: Poor classification results
 - **Solution**: Try different n_clusters values or preprocess with contrast enhancement
-
-For more examples, see the `examples/` directory.

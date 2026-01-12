@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+{% block title %}Download Satellite Imagery{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .download-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .map-container {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        min-height: 500px;
+    }
+    
+    #map {
+        width: 100%;
+        height: 500px;
+    }
+    
+    .query-panel {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .query-panel h2 {
+        margin-bottom: 1.5rem;
+        color: var(--primary-color);
+    }
+    
+    .query-section {
+        margin-bottom: 2rem;
+    }
+    
+    .query-section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: var(--text-color);
+    }
+    
+    .source-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .source-btn {
+        padding: 1rem;
+        border: 2px solid var(--border-color);
+        background: white;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+        text-align: center;
+    }
+    
+    .source-btn:hover {
+        border-color: var(--primary-color);
+        background: rgba(38, 99, 235, 0.05);
+    }
+    
+    .source-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .date-range {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .date-range input {
+        width: 100%;
+    }
+    
+    .cloud-slider {
+        margin-bottom: 1.5rem;
+    }
+    
+    .slider {
+        width: 100%;
+        cursor: pointer;
+    }
+    
+    .slider-value {
+        text-align: center;
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+    
+    .search-button {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .search-button:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .search-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .instructions-box {
+        background: rgba(102, 126, 234, 0.1);
+        border-left: 4px solid var(--primary-color);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .instructions-box h4 {
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    .instructions-box ul {
+        margin-left: 1.5rem;
+        color: var(--secondary-color);
+    }
+    
+    .results-section {
+        margin-top: 2rem;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 2rem;
+        color: var(--secondary-color);
+    }
+    
+    .imagery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .imagery-card {
+        background: var(--card-bg);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s;
+    }
+    
+    .imagery-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .imagery-thumbnail {
+        width: 100%;
+        height: 150px;
+        background: var(--bg-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+    }
+    
+    .imagery-info {
+        padding: 1rem;
+    }
+    
+    .imagery-info p {
+        margin: 0.25rem 0;
+        font-size: 0.9rem;
+        color: var(--secondary-color);
+    }
+    
+    .imagery-date {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .download-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 600;
+        margin-top: 0.75rem;
+        transition: all 0.3s;
+    }
+    
+    .download-btn:hover {
+        opacity: 0.9;
+        transform: scale(1.02);
+    }
+    
+    .help-section {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+        margin-top: 2rem;
+    }
+    
+    .help-section h3 {
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+    }
+    
+    .help-section details {
+        margin-bottom: 1rem;
+    }
+    
+    .help-section summary {
+        cursor: pointer;
+        font-weight: 600;
+        padding: 0.5rem;
+        color: var(--text-color);
+    }
+    
+    .help-section summary:hover {
+        background: var(--bg-color);
+        border-radius: 0.25rem;
+    }
+    
+    .help-section p {
+        margin: 0.75rem 0;
+        color: var(--secondary-color);
+        margin-left: 1rem;
+    }
+    
+    @media (max-width: 1024px) {
+        .download-section {
+            grid-template-columns: 1fr;
+        }
+        
+        #map {
+            height: 400px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .source-buttons {
+            grid-template-columns: 1fr;
+        }
+        
+        .date-range {
+            grid-template-columns: 1fr;
+        }
+        
+        .imagery-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero" style="padding: 2rem 0; margin-bottom: 2rem;">
+    <h1>Download Satellite Imagery</h1>
+    <p class="hero-subtitle">Search and download Sentinel-2 and Landsat 8/9 imagery</p>
+</div>
+
+<div class="download-section">
+    <!-- Map View -->
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+    
+    <!-- Query Panel -->
+    <div class="query-panel">
+        <h2>🔍 Search Parameters</h2>
+        
+        <div class="instructions-box">
+            <h4>How to use:</h4>
+            <ul>
+                <li>Click on the map to select your study area</li>
+                <li>Or draw a rectangle by clicking and dragging</li>
+                <li>Adjust date range and cloud cover</li>
+                <li>Click "Search Imagery" to find scenes</li>
+            </ul>
+        </div>
+        
+        <!-- Data Source Selection -->
+        <div class="query-section">
+            <h3>📡 Data Source</h3>
+            <div class="source-buttons">
+                <button class="source-btn active" data-source="sentinel2">Sentinel-2</button>
+                <button class="source-btn" data-source="landsat8">Landsat 8/9</button>
+            </div>
+        </div>
+        
+        <!-- Date Range -->
+        <div class="query-section">
+            <h3>📅 Date Range</h3>
+            <div class="date-range">
+                <div>
+                    <label for="start-date">From:</label>
+                    <input type="date" id="start-date" />
+                </div>
+                <div>
+                    <label for="end-date">To:</label>
+                    <input type="date" id="end-date" />
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cloud Cover Threshold -->
+        <div class="cloud-slider">
+            <label for="cloud-cover">☁️ Cloud Cover Threshold: <span id="cloud-value">10%</span></label>
+            <input type="range" id="cloud-cover" class="slider" min="0" max="100" value="10" />
+            <div class="slider-value" id="cloud-display">Max 10% cloud cover</div>
+        </div>
+        
+        <!-- Search Button -->
+        <button class="search-button" id="search-btn">
+            🔎 Search Imagery
+        </button>
+        
+        <a href="{{ url_for('upload') }}" class="btn btn-secondary" style="margin-top: 1rem; text-align: center; display: block;">
+            Skip Download → Analyze Local Files
+        </a>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="results-section" id="results-section" style="display: none;">
+    <h2>Available Imagery</h2>
+    <p id="results-info" class="subtitle"></p>
+    <div class="imagery-grid" id="imagery-grid">
+        <!-- Results will be populated here -->
+    </div>
+</div>
+
+<div class="no-results" id="no-results" style="display: none;">
+    <p>No imagery found matching your criteria. Try adjusting your date range or cloud cover threshold.</p>
+</div>
+
+<!-- Help Section -->
+<div class="help-section">
+    <h3>ℹ️ About the Data Sources</h3>
+    
+    <details>
+        <summary>Sentinel-2 (10m-60m resolution)</summary>
+        <p>The Sentinel-2 mission provides high-resolution optical imagery with 13 spectral bands. Ideal for vegetation monitoring, water detection, and urban mapping. Available since 2015 with 5-day revisit frequency.</p>
+        <p><strong>Bands available:</strong> Red, Green, Blue, NIR, SWIR, and more for calculating indices like NDVI, NDWI, and NDBI.</p>
+    </details>
+    
+    <details>
+        <summary>Landsat 8/9 (30m-100m resolution)</summary>
+        <p>Landsat provides consistent imagery with 11 spectral bands. Lower resolution than Sentinel-2 but with longer historical records (since 1972). 16-day revisit frequency.</p>
+        <p><strong>Bands available:</strong> Coastal, Blue, Green, Red, NIR, SWIR1, SWIR2, and thermal bands.</p>
+    </details>
+    
+    <details>
+        <summary>How imagery is processed</summary>
+        <p>Downloaded imagery is automatically converted to Cloud-Optimized GeoTIFF (COG) format for efficient processing. You can then use the "Analyze Local Data" section to perform optical analysis including vegetation indices, water detection, and classification.</p>
+    </details>
+    
+    <details>
+        <summary>Data licensing and attribution</summary>
+        <p>Sentinel-2 data is provided by the Copernicus program and is freely available under CC-BY-4.0 license. Landsat data is provided by USGS and is in the public domain. Always cite the data source in your publications.</p>
+    </details>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize map
+    const map = L.map('map').setView([0, 0], 3);
+    let selectedBounds = null;
+    let drawControl = null;
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Click to select area
+    map.on('click', function(e) {
+        if (drawControl) {
+            map.removeLayer(drawControl);
+        }
+        drawControl = L.rectangle([
+            [e.latlng.lat - 0.5, e.latlng.lng - 0.5],
+            [e.latlng.lat + 0.5, e.latlng.lng + 0.5]
+        ]).addTo(map);
+        selectedBounds = drawControl.getBounds();
+    });
+    
+    // Source selection
+    document.querySelectorAll('.source-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    // Cloud cover slider
+    const cloudSlider = document.getElementById('cloud-cover');
+    cloudSlider.addEventListener('input', function() {
+        document.getElementById('cloud-value').textContent = this.value + '%';
+        document.getElementById('cloud-display').textContent = `Max ${this.value}% cloud cover`;
+    });
+    
+    // Set default dates
+    const today = new Date();
+    const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+    document.getElementById('end-date').valueAsDate = today;
+    document.getElementById('start-date').valueAsDate = oneYearAgo;
+    
+    // Search button
+    document.getElementById('search-btn').addEventListener('click', async function() {
+        if (!selectedBounds) {
+            alert('Please select an area on the map first');
+            return;
+        }
+        
+        this.disabled = true;
+        this.textContent = '🔍 Searching...';
+        
+        const source = document.querySelector('.source-btn.active').dataset.source;
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        const maxCloud = document.getElementById('cloud-cover').value;
+        
+        // Simulate search results
+        setTimeout(() => {
+            document.getElementById('results-section').style.display = 'block';
+            document.getElementById('results-info').textContent = 
+                `Found 5 scenes from ${source} between ${startDate} and ${endDate} with <${maxCloud}% cloud cover`;
+            
+            const imageryGrid = document.getElementById('imagery-grid');
+            imageryGrid.innerHTML = '';
+            
+            for (let i = 1; i <= 5; i++) {
+                const date = new Date(today.getTime() - Math.random() * 365 * 24 * 60 * 60 * 1000);
+                const dateStr = date.toISOString().split('T')[0];
+                const cloudCover = Math.floor(Math.random() * parseFloat(maxCloud));
+                
+                const card = document.createElement('div');
+                card.className = 'imagery-card';
+                card.innerHTML = `
+                    <div class="imagery-thumbnail">🛰️</div>
+                    <div class="imagery-info">
+                        <div class="imagery-date">${dateStr}</div>
+                        <p>☁️ ${cloudCover}% cloud</p>
+                        <p>📐 32m resolution</p>
+                        <button class="download-btn">⬇️ Download</button>
+                    </div>
+                `;
+                imageryGrid.appendChild(card);
+            }
+            
+            this.disabled = false;
+            this.textContent = '🔎 Search Imagery';
+        }, 1500);
+    });
+</script>
+{% endblock %}

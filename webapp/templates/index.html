@@ -6,7 +6,23 @@
 <div class="hero">
     <h1>Welcome to Analyz</h1>
     <p class="hero-subtitle">Comprehensive Optical and SAR Image Analysis Platform</p>
-    <a href="{{ url_for('upload') }}" class="btn btn-primary btn-large">Start Analysis</a>
+    
+    <!-- Primary Action Cards -->
+    <div class="action-cards">
+        <div class="action-card">
+            <div class="action-icon">🛰️</div>
+            <h3>Online Imagery Search</h3>
+            <p>Query STAC catalogs and download Sentinel or Landsat imagery directly.</p>
+            <a href="{{ url_for('online_imagery') }}" class="btn btn-primary">Search & Download</a>
+        </div>
+        
+        <div class="action-card">
+            <div class="action-icon">📁</div>
+            <h3>Analyze Local Data</h3>
+            <p>Skip online downloads and analyze images stored on your system.</p>
+            <a href="{{ url_for('upload') }}" class="btn btn-primary">Upload & Analyze</a>
+        </div>
+    </div>
 </div>
 
 <div class="features">
@@ -72,6 +88,15 @@
 
 <div class="cta-section">
     <h2>Ready to Analyze Your Imagery?</h2>
-    <a href="{{ url_for('upload') }}" class="btn btn-primary btn-large">Get Started Now</a>
+    <div class="cta-action-cards">
+        <a href="{{ url_for('online_imagery') }}" class="cta-btn">
+            <span class="cta-icon">🛰️</span>
+            Search Online Imagery
+        </a>
+        <a href="{{ url_for('upload') }}" class="cta-btn">
+            <span class="cta-icon">📁</span>
+            Analyze Local Files
+        </a>
+    </div>
 </div>
 {% endblock %}

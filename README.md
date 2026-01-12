@@ -153,9 +153,10 @@ automatedAnalysis/
 
 ## 📚 Documentation
 
-- **[ENHANCEMENTS.md](ENHANCEMENTS.md)** - Comprehensive guide to all new features
-- **[QUICKSTART.md](QUICKSTART.md)** - Quick reference and testing guide
-- **WEB_APP_QUICKSTART.md** - Web application user guide
+- **[Manager.md](Manager.md)** - Executive overview for managers (architecture, tech stack, deployment)
+- **[docs/API_USAGE_GUIDE.md](docs/API_USAGE_GUIDE.md)** - Complete Python API reference and CLI guide
+- **[docs/WEB_APP_GUIDE.md](docs/WEB_APP_GUIDE.md)** - Web application user guide and configuration
+- **[webapp/README_WEB.md](webapp/README_WEB.md)** - Web app implementation details
 
 ## 🚀 Data Sources
 

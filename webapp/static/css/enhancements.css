@@ -1,0 +1,606 @@
+/* Enhanced styles for online imagery workflow - thumbnails, progress tracking, and validation */
+
+/* THUMBNAIL DISPLAY */
+.thumbnail-container {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.thumbnail-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.scene-card .thumbnail-container {
+    height: 200px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.scene-card.loading .thumbnail-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255,255,255,0.3) 50%, 
+        transparent 100%);
+    animation: shimmer 2s infinite;
+    z-index: 1;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* METADATA DISPLAY */
+.scene-metadata {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.metadata-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metadata-label {
+    font-weight: 600;
+    color: var(--text-color);
+    min-width: 80px;
+}
+
+.metadata-value {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.metadata-display {
+    background: var(--bg-color);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.metadata-display h4 {
+    margin-bottom: 0.75rem;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.metadata-display dl {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+.metadata-display dt {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.metadata-display dd {
+    color: var(--secondary-color);
+    margin: 0;
+}
+
+/* VALIDATION MESSAGES */
+.validation-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.validation-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    line-height: 1.4;
+}
+
+.validation-content {
+    flex: 1;
+}
+
+.validation-content p {
+    margin: 0.25rem 0;
+    line-height: 1.4;
+}
+
+.validation-content .suggestion {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    margin-top: 0.3rem;
+    font-style: italic;
+}
+
+/* Validation severity levels */
+.validation-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 4px solid var(--error-color);
+    color: var(--error-color);
+}
+
+.validation-message.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-left: 4px solid var(--warning-color);
+    color: var(--warning-color);
+}
+
+.validation-message.info {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 4px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.validation-message.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-left: 4px solid var(--success-color);
+    color: var(--success-color);
+}
+
+.validation-message.dismissible .close-validation {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    color: inherit;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.validation-message.dismissible .close-validation:hover {
+    opacity: 1;
+}
+
+/* PROGRESS TRACKING */
+.progress-section {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow);
+    margin: 2rem 0;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.progress-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.progress-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: var(--bg-color);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    border-left: 3px solid var(--primary-color);
+}
+
+.stat-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+/* Scene progress item */
+.scene-progress-item {
+    background: var(--bg-color);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    border-left: 3px solid var(--border-color);
+    transition: all 0.3s;
+}
+
+.scene-progress-item.queued {
+    border-left-color: var(--warning-color);
+}
+
+.scene-progress-item.downloading {
+    border-left-color: var(--primary-color);
+}
+
+.scene-progress-item.completed {
+    border-left-color: var(--success-color);
+}
+
+.scene-progress-item.failed {
+    border-left-color: var(--error-color);
+}
+
+.scene-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.scene-progress-title {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.scene-progress-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.3rem 0.75rem;
+    border-radius: 2rem;
+    background: white;
+}
+
+.scene-progress-status.queued {
+    color: var(--warning-color);
+}
+
+.scene-progress-status.downloading {
+    color: var(--primary-color);
+}
+
+.scene-progress-status.completed {
+    color: var(--success-color);
+}
+
+.scene-progress-status.failed {
+    color: var(--error-color);
+}
+
+/* Progress bar */
+.progress-bar-container {
+    width: 100%;
+    height: 24px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.75rem 0;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), #667eea);
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+.progress-bar-fill.completed {
+    background: linear-gradient(90deg, var(--success-color), #34d399);
+}
+
+.progress-bar-fill.failed {
+    background: linear-gradient(90deg, var(--error-color), #f87171);
+}
+
+.progress-bar-text {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.25rem;
+}
+
+/* INTERACTIVE MAP ENHANCEMENTS */
+.map-wrapper {
+    position: relative;
+}
+
+.map-info-overlay {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    max-width: 300px;
+    z-index: 401;
+    font-size: 0.9rem;
+}
+
+.map-info-overlay h4 {
+    margin: 0 0 0.75rem 0;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.map-info-overlay .info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+.map-info-overlay .info-item:last-child {
+    border-bottom: none;
+}
+
+.map-info-overlay .info-label {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.map-info-overlay .info-value {
+    color: var(--secondary-color);
+    text-align: right;
+}
+
+.roi-area-display {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.roi-area-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+}
+
+.roi-area-unit {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+/* MAP RESPONSIVENESS */
+.leaflet-container {
+    background-color: #e0e7ff;
+}
+
+.leaflet-control-zoom {
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: white;
+    box-shadow: var(--shadow);
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+    border-radius: 0.4rem;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--primary-color);
+    background: white;
+}
+
+.leaflet-control-zoom-in:hover,
+.leaflet-control-zoom-out:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.leaflet-draw-toolbar {
+    border-radius: 0.5rem;
+    background: white;
+    box-shadow: var(--shadow-lg);
+}
+
+.leaflet-draw-toolbar a {
+    background-color: white;
+    border-radius: 0.4rem;
+    color: var(--primary-color);
+}
+
+.leaflet-draw-toolbar a:hover {
+    background-color: var(--bg-color);
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-edit-edit {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* INPUT STATUS INDICATORS */
+.form-input-status {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    z-index: 10;
+}
+
+.form-group {
+    position: relative;
+}
+
+.form-input-status.valid::before {
+    content: '✓';
+    color: var(--success-color);
+}
+
+.form-input-status.invalid::before {
+    content: '✕';
+    color: var(--error-color);
+}
+
+.form-group input:focus + .form-input-status,
+.form-group select:focus + .form-input-status {
+    opacity: 1;
+}
+
+/* Enhanced form styling */
+.form-group input[type="date"],
+.form-group input[type="number"],
+.form-group select {
+    transition: all 0.3s;
+}
+
+.form-group input:invalid,
+.form-group select:invalid {
+    border-color: var(--error-color);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.form-group input:valid,
+.form-group select:valid {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+/* MOBILE RESPONSIVENESS */
+@media (max-width: 1024px) {
+    .progress-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .scene-progress-item {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .progress-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .map-info-overlay {
+        right: 0.5rem;
+        left: 0.5rem;
+        max-width: none;
+        font-size: 0.8rem;
+    }
+    
+    .validation-message {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+    }
+    
+    .scene-progress-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .scene-progress-status {
+        align-self: flex-start;
+    }
+    
+    .scene-metadata {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* LOADING AND ANIMATION STATES */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.spinner-mini {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ACCESSIBILITY */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus visible for better keyboard navigation */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .validation-message,
+    .progress-section,
+    .map-wrapper {
+        page-break-inside: avoid;
+    }
+}

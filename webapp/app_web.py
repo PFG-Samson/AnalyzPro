@@ -18,16 +18,36 @@ from analyz import (
 )
 from analyz.utils.satellite_preprocessor import SatellitePreprocessor
 from analyz.utils.cog import convert_to_cog
+from analyz.utils.stac_downloader import STACDownloadManager, download_imagery_async
+from webapp.utils.temporary_storage import TemporaryStorageManager
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
 app.config['RESULTS_FOLDER'] = Path(__file__).parent / 'results'
+app.config['TEMP_DOWNLOADS_FOLDER'] = Path(__file__).parent / 'temp_downloads'
+app.config['PERMANENT_IMAGERY_FOLDER'] = Path(__file__).parent / 'permanent_imagery'
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024  # 5GB max file size
 
 # Ensure folders exist
 app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 app.config['RESULTS_FOLDER'].mkdir(exist_ok=True)
+app.config['TEMP_DOWNLOADS_FOLDER'].mkdir(exist_ok=True)
+app.config['PERMANENT_IMAGERY_FOLDER'].mkdir(exist_ok=True)
+
+# Initialize STAC Download Manager
+download_manager = STACDownloadManager(
+    temp_folder=app.config['TEMP_DOWNLOADS_FOLDER'],
+    permanent_folder=app.config['PERMANENT_IMAGERY_FOLDER']
+)
+
+# Initialize Temporary Storage Manager for metadata tracking
+storage_manager = TemporaryStorageManager(
+    temp_folder=app.config['TEMP_DOWNLOADS_FOLDER']
+)
+
+# Download sessions tracking
+download_sessions = {}
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'tif', 'tiff', 'geotiff', 'geojson', 'json', 'shp', 'gpkg', 'kml', 'zip', 'tar', 'gz'}
@@ -772,6 +792,29 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/download', methods=['GET'])
+def download():
+    """Satellite imagery download page."""
+    return render_template('download.html')
+
+
+@app.route('/download-progress')
+def download_progress():
+    """Download progress tracking page."""
+    download_id = request.args.get('id')
+    if not download_id:
+        flash('No download ID provided', 'error')
+        return redirect('/')
+    
+    return render_template('download_progress.html', download_id=download_id)
+
+
+@app.route('/cache-management')
+def cache_management():
+    """Cache management and storage analytics page."""
+    return render_template('cache_management.html')
+
+
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     """Upload files and configure analysis."""
@@ -968,6 +1011,492 @@ def view_file(session_id, filename):
         return "File not found", 404
     
     return send_file(file_path)
+
+
+# Online Imagery Routes
+@app.route('/online-imagery', methods=['GET'])
+def online_imagery():
+    """Online imagery search and discovery page."""
+    return render_template('online_imagery.html')
+
+
+@app.route('/api/search-stac', methods=['POST'])
+def search_stac():
+    """Search STAC catalog for imagery matching criteria."""
+    try:
+        data = request.get_json()
+        
+        # Validate inputs
+        if not data.get('geometry'):
+            return jsonify({'error': 'No geometry provided'}), 400
+        
+        geometry = data.get('geometry')
+        satellite = data.get('satellite', 'sentinel2')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        max_cloud = data.get('max_cloud', 100)
+        sar_options = data.get('sar_options', {})
+        
+        # Call STAC search function
+        results = query_stac_catalog(
+            geometry=geometry,
+            satellite=satellite,
+            start_date=start_date,
+            end_date=end_date,
+            max_cloud=max_cloud,
+            sar_options=sar_options
+        )
+        
+        return jsonify({'features': results})
+    
+    except ImportError as e:
+        logger.error(f"pystac-client not installed: {str(e)}")
+        return jsonify({
+            'error': 'pystac-client is required for STAC queries. Install with: pip install pystac-client'
+        }), 500
+    except Exception as e:
+        logger.error(f"STAC search error: {str(e)}")
+        return jsonify({'error': f'STAC query failed: {str(e)}'}), 500
+
+
+@app.route('/api/prepare-download', methods=['POST'])
+def prepare_download():
+    """Prepare selected scenes for download."""
+    try:
+        data = request.get_json()
+        scene_ids = data.get('scene_ids', [])
+        scenes = data.get('scenes', [])
+        
+        if not scene_ids or not scenes:
+            return jsonify({'error': 'No scenes selected'}), 400
+        
+        # Create a download session
+        download_id = str(uuid.uuid4())
+        download_folder = app.config['UPLOAD_FOLDER'] / f"download_{download_id}"
+        download_folder.mkdir(exist_ok=True)
+        
+        # Store download info
+        download_info = {
+            'download_id': download_id,
+            'scene_ids': scene_ids,
+            'scenes': scenes,
+            'status': 'preparing',
+            'created': datetime.now().isoformat(),
+            'folder': str(download_folder)
+        }
+        
+        # Save download metadata
+        metadata_file = download_folder / 'metadata.json'
+        with open(metadata_file, 'w') as f:
+            json.dump(download_info, f, indent=2)
+        
+        logger.info(f"Download session created: {download_id}")
+        
+        return jsonify({
+            'download_id': download_id,
+            'message': f'{len(scene_ids)} scene(s) prepared for download'
+        })
+    
+    except Exception as e:
+        logger.error(f"Download preparation error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/start-stac-download', methods=['POST'])
+def start_stac_download():
+    """
+    Start downloading imagery from STAC.
+    
+    Expects JSON with:
+    - download_id: Download session ID
+    - scenes: List of scene objects
+    - keep_imagery: Whether to keep imagery after analysis
+    - auto_analyze: Whether to auto-start analysis after download
+    """
+    try:
+        data = request.json
+        download_id = data.get('download_id')
+        scenes = data.get('scenes', [])
+        keep_imagery = data.get('keep_imagery', False)
+        auto_analyze = data.get('auto_analyze', False)
+        
+        if not download_id or not scenes:
+            return jsonify({'error': 'Missing download_id or scenes'}), 400
+        
+        # Create download session
+        manager_session = download_manager.create_session(
+            download_id,
+            scenes,
+            keep_imagery=keep_imagery
+        )
+        
+        # Track in download_sessions
+        download_sessions[download_id] = {
+            'status': 'downloading',
+            'download_id': download_id,
+            'scenes': scenes,
+            'keep_imagery': keep_imagery,
+            'auto_analyze': auto_analyze,
+            'progress': 0,
+            'errors': [],
+            'created': datetime.now().isoformat()
+        }
+        
+        # Register downloads in temporary storage manager
+        for scene in scenes:
+            metadata = {
+                'scene_id': scene.get('id'),
+                'platform': scene.get('platform'),
+                'acquired': scene.get('acquired'),
+                'cloud_cover': scene.get('cloud_cover', 0),
+                'bbox': scene.get('geometry', {}).get('bbox'),
+                'stac_collection': scene.get('collection')
+            }
+            storage_manager.register_download(download_id, scene.get('id'), metadata)
+        
+        # Define progress callback
+        def progress_callback(progress_info):
+            session = download_sessions.get(download_id)
+            if session:
+                if progress_info['type'] == 'scene_complete':
+                    session['progress'] = progress_info['percent']
+                    logger.info(f"Download progress: {progress_info['percent']:.1f}%")
+                elif progress_info['type'] == 'complete':
+                    session['status'] = 'completed'
+                    session['progress'] = 100
+                    logger.info(f"Download completed: {download_id}")
+                elif progress_info['type'] == 'error':
+                    session['errors'].append(progress_info.get('error', 'Unknown error'))
+                    logger.error(f"Download error: {progress_info.get('error')}")
+        
+        # Start download in background thread
+        download_thread = threading.Thread(
+            target=download_imagery_async,
+            args=(download_manager, download_id, scenes, progress_callback),
+            daemon=True
+        )
+        download_thread.start()
+        
+        logger.info(f"STAC download started: {download_id} ({len(scenes)} scenes)")
+        
+        return jsonify({
+            'download_id': download_id,
+            'status': 'downloading',
+            'message': 'Download started in background'
+        })
+    
+    except Exception as e:
+        logger.error(f"STAC download start error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/download-progress/<download_id>')
+def get_download_progress(download_id):
+    """
+    Get download progress as Server-Sent Events stream.
+    
+    Streams real-time progress updates to client.
+    """
+    def generate():
+        last_update = 0
+        while True:
+            session = download_sessions.get(download_id)
+            if not session:
+                yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
+                break
+            
+            progress = session.get('progress', 0)
+            status = session.get('status', 'unknown')
+            
+            # Send update if progress changed
+            if progress != last_update or status in ['completed', 'error']:
+                data = {
+                    'download_id': download_id,
+                    'status': status,
+                    'progress': progress,
+                    'errors': session.get('errors', [])
+                }
+                yield f"data: {json.dumps(data)}\n\n"
+                last_update = progress
+            
+            # Exit if completed or error
+            if status in ['completed', 'error', 'failed']:
+                break
+            
+            # Sleep before next check
+            import time
+            time.sleep(1)
+    
+    return generate(), 200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no'
+    }
+
+
+@app.route('/api/download-status/<download_id>')
+def get_download_status(download_id):
+    """Get current download session status."""
+    try:
+        session = download_sessions.get(download_id)
+        manager_session = download_manager.get_session_info(download_id)
+        
+        if not session and not manager_session:
+            return jsonify({'error': 'Download session not found'}), 404
+        
+        # Combine info
+        status_info = {
+            'download_id': download_id,
+            'status': session.get('status', 'unknown') if session else 'unknown',
+            'progress': session.get('progress', 0) if session else 0,
+            'errors': session.get('errors', []) if session else [],
+            'files': manager_session.get('downloaded_files', []) if manager_session else [],
+            'total_size': manager_session.get('total_size', 0) if manager_session else 0
+        }
+        
+        return jsonify(status_info)
+    
+    except Exception as e:
+        logger.error(f"Status check error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/confirm-storage/<download_id>', methods=['POST'])
+def confirm_storage(download_id):
+    """
+    Confirm storage decision for downloaded imagery.
+    
+    Expects JSON with:
+    - action: 'keep' (permanent), 'analyze' (temp), or 'delete'
+    - auto_analyze: Whether to start analysis
+    """
+    try:
+        data = request.json
+        action = data.get('action', 'delete')
+        auto_analyze = data.get('auto_analyze', False)
+        
+        session = download_sessions.get(download_id)
+        if not session:
+            return jsonify({'error': 'Download session not found'}), 404
+        
+        # Handle storage action
+        result = {'download_id': download_id, 'action': action}
+        
+        if action == 'keep':
+            # Move to permanent storage
+            permanent_path = download_manager.move_to_permanent(download_id)
+            storage_manager.mark_as_kept(download_id)
+            result['permanent_path'] = str(permanent_path)
+            logger.info(f"Imagery moved to permanent storage: {permanent_path}")
+        
+        elif action == 'analyze':
+            # Keep temp for analysis - mark for deletion after analysis
+            storage_manager.mark_for_deletion(download_id, reason="analysis_complete")
+            result['temp_path'] = session.get('folder')
+            logger.info(f"Session {download_id} marked for deletion after analysis")
+        
+        elif action == 'delete':
+            # Delete downloads immediately
+            download_manager.cleanup_session(download_id, force=True)
+            result['deleted'] = True
+            logger.info(f"Download cleaned up: {download_id}")
+        
+        # Start analysis if requested
+        if auto_analyze and action in ['keep', 'analyze']:
+            imagery_folder = download_manager.get_session_info(download_id).get('folder')
+            
+            # Create analysis session
+            analysis_id = str(uuid.uuid4())
+            analysis_status[analysis_id] = {
+                'session_id': analysis_id,
+                'status': 'queued',
+                'progress': 0,
+                'imagery_source': 'stac_download',
+                'download_id': download_id,
+                'created': datetime.now().isoformat()
+            }
+            
+            # Track analysis in storage manager
+            storage_manager.mark_as_analyzed(download_id, analysis_id)
+            
+            result['analysis_id'] = analysis_id
+            logger.info(f"Analysis session created from STAC download: {analysis_id}")
+        
+        # Clean up session tracking
+        if download_id in download_sessions:
+            del download_sessions[download_id]
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"Storage confirmation error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/cleanup-downloads', methods=['POST'])
+def cleanup_old_downloads():
+    """
+    Clean up old temporary downloads.
+    
+    Expects JSON with optional 'hours' parameter (default 24).
+    """
+    try:
+        data = request.json or {}
+        hours = data.get('hours', 24)
+        
+        count = download_manager.cleanup_old_sessions(hours=hours)
+        
+        return jsonify({
+            'message': f'Cleaned up {count} old download session(s)',
+            'cleaned': count
+        })
+    
+    except Exception as e:
+        logger.error(f"Cleanup error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/cache-info', methods=['GET'])
+def get_cache_info():
+    """
+    Get information about current cache (temporary downloads).
+    
+    Returns cache statistics including total size, file count, breakdown by satellite,
+    age distribution, and sessions awaiting cleanup.
+    """
+    try:
+        cache_info = storage_manager.get_cache_info()
+        return jsonify(cache_info)
+    
+    except Exception as e:
+        logger.error(f"Cache info error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/cache-cleanup', methods=['POST'])
+def cache_cleanup():
+    """
+    Clean up marked and old cache files.
+    
+    Expects JSON with optional parameters:
+    - force_old: Whether to force delete old sessions (default False)
+    - days_old: Age threshold for force deletion (default 1)
+    """
+    try:
+        data = request.json or {}
+        force_old = data.get('force_old', False)
+        days_old = data.get('days_old', 1)
+        
+        report = storage_manager.cleanup_marked_sessions(
+            force_delete_old=force_old,
+            days_old=days_old
+        )
+        
+        logger.info(f"Cache cleanup report: {len(report['deleted_sessions'])} sessions deleted, "
+                   f"{report['size_freed_mb']:.2f} MB freed")
+        
+        return jsonify(report)
+    
+    except Exception as e:
+        logger.error(f"Cache cleanup error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/session-metadata/<session_id>', methods=['GET'])
+def get_session_metadata(session_id):
+    """
+    Get metadata for a specific download session.
+    
+    Returns scene metadata including source, acquisition date, satellite, cloud cover, etc.
+    """
+    try:
+        metadata = storage_manager.get_session_metadata(session_id)
+        
+        if not metadata:
+            return jsonify({'error': 'Session not found'}), 404
+        
+        return jsonify(metadata)
+    
+    except Exception as e:
+        logger.error(f"Metadata retrieval error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+def query_stac_catalog(geometry, satellite='sentinel2', start_date=None, end_date=None, 
+                       max_cloud=100, sar_options=None):
+    """
+    Query Planetary Computer STAC catalog for matching imagery.
+    
+    Requires pystac-client to be installed (see requirements.txt).
+    
+    Args:
+        geometry: GeoJSON geometry dict
+        satellite: 'sentinel2', 'sentinel1', 'landsat8', or 'landsat9'
+        start_date: ISO date string (YYYY-MM-DD)
+        end_date: ISO date string (YYYY-MM-DD)
+        max_cloud: Max cloud coverage percentage (0-100)
+        sar_options: Dict with SAR-specific filters
+    
+    Returns:
+        List of feature objects with id and properties
+    
+    Raises:
+        ImportError: If pystac-client is not installed
+        Exception: If STAC query fails
+    """
+    import pystac_client
+    from datetime import datetime as dt
+    
+    # Planetary Computer STAC API endpoint
+    catalog_url = "https://planetarycomputer.microsoft.com/api/stac/v1"
+    
+    # Map satellite names to collection IDs
+    collection_map = {
+        'sentinel2': 'sentinel-2-l2a',
+        'sentinel1': 'sentinel-1-rtc',
+        'landsat8': 'landsat-c2-l2',
+        'landsat9': 'landsat-c2-l2'
+    }
+    
+    collection = collection_map.get(satellite, 'sentinel-2-l2a')
+    
+    # Build search query
+    search = pystac_client.Client.open(catalog_url).search(
+        collections=[collection],
+        intersects=geometry,
+        datetime=f"{start_date}T00:00:00Z/{end_date}T23:59:59Z" if start_date and end_date else None,
+        max_items=100
+    )
+    
+    # Get matching items
+    items = search.get_all_items()
+    
+    # Process and filter results
+    results = []
+    for item in items:
+        props = item.properties.copy()
+        
+        # Add item ID and asset info
+        props['id'] = item.id
+        props['datetime'] = props.get('datetime') or item.datetime.isoformat() if item.datetime else 'Unknown'
+        
+        # Filter by cloud cover if optical
+        if satellite.startswith('sentinel2') or satellite.startswith('landsat'):
+            cloud_cover = props.get('eo:cloud_cover', 0)
+            if cloud_cover > max_cloud:
+                continue
+        
+        # Add asset URLs if available
+        props['assets'] = {key: {
+            'href': asset.href,
+            'type': asset.media_type,
+            'roles': asset.roles
+        } for key, asset in item.assets.items()}
+        
+        results.append({'id': item.id, 'properties': props})
+    
+    logger.info(f"STAC search returned {len(results)} results for {satellite}")
+    return results
 
 
 if __name__ == '__main__':

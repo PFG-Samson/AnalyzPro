@@ -1,0 +1,1065 @@
+{% extends "base.html" %}
+
+{% block title %}Online Imagery Search{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/@leaflet/draw@1.0.4/dist/leaflet.draw.css" />
+<style>
+    .online-imagery-container {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        height: 600px;
+    }
+    
+    .map-wrapper {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        position: relative;
+    }
+    
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        height: 600px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+    
+    .sidebar::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .sidebar::-webkit-scrollbar-track {
+        background: var(--border-color);
+        border-radius: 3px;
+    }
+    
+    .sidebar::-webkit-scrollbar-thumb {
+        background: var(--secondary-color);
+        border-radius: 3px;
+    }
+    
+    .form-section {
+        background: var(--card-bg);
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .form-section h3 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+    
+    .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+    }
+    
+    .form-group select,
+    .form-group input[type="date"],
+    .form-group input[type="number"] {
+        width: 100%;
+        padding: 0.6rem;
+        border: 2px solid var(--border-color);
+        border-radius: 0.4rem;
+        font-size: 0.85rem;
+        transition: border-color 0.3s;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+    
+    .slider-group {
+        margin-top: 0.5rem;
+    }
+    
+    .slider-group input[type="range"] {
+        width: 100%;
+        cursor: pointer;
+    }
+    
+    .slider-value {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--secondary-color);
+        margin-top: 0.5rem;
+    }
+    
+    .slider-value span {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+    
+    .checkbox-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        cursor: pointer;
+    }
+    
+    .checkbox-item label {
+        margin: 0;
+        cursor: pointer;
+        font-weight: 400;
+    }
+    
+    .search-button {
+        width: 100%;
+        padding: 0.9rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.95rem;
+    }
+    
+    .search-button:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .search-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .roi-status {
+        padding: 0.75rem;
+        background: rgba(102, 126, 234, 0.1);
+        border-left: 3px solid var(--primary-color);
+        border-radius: 0.4rem;
+        font-size: 0.85rem;
+        color: var(--text-color);
+    }
+    
+    .roi-status.empty {
+        display: none;
+    }
+    
+    .roi-status.active {
+        display: block;
+        color: var(--success-color);
+        border-left-color: var(--success-color);
+        background: rgba(16, 185, 129, 0.1);
+    }
+    
+    /* Results Section */
+    .results-section {
+        margin-top: 2rem;
+        display: none;
+    }
+    
+    .results-section.active {
+        display: block;
+    }
+    
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .results-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .results-count {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .view-toggle button {
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--border-color);
+        background: white;
+        border-radius: 0.4rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+    }
+    
+    .view-toggle button.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .scenes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .scene-card {
+        background: var(--card-bg);
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+    
+    .scene-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .scene-card.selected {
+        border-color: var(--primary-color);
+        background: rgba(38, 99, 235, 0.02);
+    }
+    
+    .scene-thumbnail {
+        width: 100%;
+        height: 150px;
+        background: var(--bg-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        position: relative;
+    }
+    
+    .scene-badge {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .scene-info {
+        padding: 1rem;
+    }
+    
+    .scene-date {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .scene-meta {
+        font-size: 0.8rem;
+        color: var(--secondary-color);
+        margin-bottom: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .scene-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .scene-checkbox input[type="checkbox"] {
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+    }
+    
+    .scene-list {
+        display: none;
+    }
+    
+    .scene-list.active {
+        display: block;
+    }
+    
+    .scene-row {
+        background: var(--card-bg);
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow);
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+    }
+    
+    .scene-row:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .scene-row.selected {
+        border-color: var(--primary-color);
+        background: rgba(38, 99, 235, 0.02);
+    }
+    
+    .scene-row-check {
+        display: flex;
+        align-items: center;
+    }
+    
+    .scene-row-check input[type="checkbox"] {
+        cursor: pointer;
+        width: 20px;
+        height: 20px;
+    }
+    
+    .scene-row-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    .scene-row-detail {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .scene-row-label {
+        font-size: 0.75rem;
+        color: var(--secondary-color);
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    
+    .scene-row-value {
+        font-size: 0.95rem;
+        color: var(--text-color);
+        font-weight: 500;
+    }
+    
+    .scene-row-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .action-link {
+        padding: 0.5rem 1rem;
+        background: var(--bg-color);
+        color: var(--primary-color);
+        border-radius: 0.4rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: none;
+    }
+    
+    .action-link:hover {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .no-results {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 0.75rem;
+        text-align: center;
+        color: var(--secondary-color);
+    }
+    
+    .action-bar {
+        background: var(--card-bg);
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1.5rem;
+        align-items: center;
+        margin-bottom: 2rem;
+        display: none;
+    }
+    
+    .action-bar.active {
+        display: grid;
+    }
+    
+    .selection-info {
+        color: var(--secondary-color);
+    }
+    
+    .selection-info strong {
+        color: var(--primary-color);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .download-btn {
+        padding: 0.8rem 1.5rem;
+        background: var(--success-color);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .download-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .clear-btn {
+        padding: 0.8rem 1.5rem;
+        background: var(--border-color);
+        color: var(--text-color);
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .clear-btn:hover {
+        background: var(--secondary-color);
+        color: white;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .map-instructions {
+        position: absolute;
+        bottom: 1rem;
+        left: 1rem;
+        background: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: var(--shadow-lg);
+        font-size: 0.85rem;
+        max-width: 250px;
+        color: var(--text-color);
+        z-index: 400;
+    }
+    
+    .map-instructions strong {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .online-imagery-container {
+            grid-template-columns: 1fr;
+            height: auto;
+            gap: 1rem;
+        }
+        
+        .sidebar {
+            height: auto;
+            padding-right: 0;
+        }
+        
+        #map {
+            min-height: 400px;
+        }
+        
+        .scene-row-details {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .online-imagery-container {
+            gap: 1rem;
+        }
+        
+        .scenes-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+        
+        .scene-row-details {
+            grid-template-columns: 1fr;
+        }
+        
+        .view-toggle {
+            flex-direction: column;
+        }
+        
+        .view-toggle button {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero" style="padding: 2rem 0; margin-bottom: 2rem;">
+    <h1>Online Imagery Search</h1>
+    <p class="hero-subtitle">Search STAC catalogs for Sentinel and Landsat imagery</p>
+</div>
+
+<!-- Main Container -->
+<div class="online-imagery-container">
+    <!-- Map Section -->
+    <div class="map-wrapper">
+        <div id="map"></div>
+        <div class="map-instructions">
+            <strong>🗺️ Draw ROI</strong>
+            Use the drawing tools in the top-left corner to select your area of interest.
+        </div>
+    </div>
+    
+    <!-- Sidebar Section -->
+    <div class="sidebar">
+        <!-- Satellite Selection -->
+        <div class="form-section">
+            <h3>🛰️ Satellite Selection</h3>
+            <div class="form-group">
+                <label for="satellite-select">Satellite/Mission</label>
+                <select id="satellite-select">
+                    <option value="sentinel2">Sentinel-2 (10-60m, Optical)</option>
+                    <option value="sentinel1">Sentinel-1 (10m, SAR)</option>
+                    <option value="landsat8">Landsat 8 (30m, Optical)</option>
+                    <option value="landsat9">Landsat 9 (30m, Optical)</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Date Range -->
+        <div class="form-section">
+            <h3>📅 Date Range</h3>
+            <div class="form-group">
+                <label for="start-date">From:</label>
+                <input type="date" id="start-date" />
+            </div>
+            <div class="form-group">
+                <label for="end-date">To:</label>
+                <input type="date" id="end-date" />
+            </div>
+        </div>
+        
+        <!-- Cloud Coverage (Optical only) -->
+        <div class="form-section" id="cloud-section">
+            <h3>☁️ Cloud Coverage</h3>
+            <div class="form-group">
+                <div class="slider-group">
+                    <input type="range" id="cloud-slider" min="0" max="100" value="20" />
+                    <div class="slider-value">
+                        <span>0%</span>
+                        <span id="cloud-value">20%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SAR-Specific Options -->
+        <div class="form-section" id="sar-section" style="display: none;">
+            <h3>📡 SAR Options</h3>
+            <div class="form-group">
+                <label>Polarization</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="vv-pol" checked />
+                        <label for="vv-pol">VV</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="vh-pol" checked />
+                        <label for="vh-pol">VH</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="orbit-direction">Orbit Direction</label>
+                <select id="orbit-direction">
+                    <option value="">Any</option>
+                    <option value="ASCENDING">Ascending</option>
+                    <option value="DESCENDING">Descending</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- ROI Status -->
+        <div class="roi-status empty" id="roi-status">
+            ✓ ROI selected (geometry ready)
+        </div>
+        
+        <!-- Search Button -->
+        <button class="search-button" id="search-btn" disabled>
+            🔎 Search Imagery
+        </button>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="results-section" id="results-section">
+    <div class="results-header">
+        <h2>Available Scenes</h2>
+        <span class="results-count" id="results-count">0 scenes</span>
+    </div>
+    
+    <!-- View Toggle -->
+    <div class="view-toggle">
+        <button class="active" data-view="grid">🖼️ Grid View</button>
+        <button data-view="list">📋 List View</button>
+    </div>
+    
+    <!-- Grid View -->
+    <div class="scenes-grid active" id="scenes-grid">
+        <!-- Scenes will be rendered here -->
+    </div>
+    
+    <!-- List View -->
+    <div class="scene-list" id="scene-list">
+        <!-- Scenes will be rendered here -->
+    </div>
+    
+    <!-- No Results -->
+    <div class="no-results" id="no-results" style="display: none;">
+        No imagery found matching your criteria. Try adjusting your date range or search area.
+    </div>
+    
+    <!-- Action Bar -->
+    <div class="action-bar" id="action-bar">
+        <div class="selection-info">
+            <strong id="selected-count">0</strong> scene(s) selected
+        </div>
+        <div class="action-buttons">
+            <button class="clear-btn" id="clear-selection-btn">Clear Selection</button>
+            <button class="download-btn" id="download-selection-btn">⬇️ Prepare Download</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@leaflet/draw@1.0.4/dist/leaflet.draw.js"></script>
+<script>
+    // Initialize state
+    let map = null;
+    let drawnItems = new L.FeatureGroup();
+    let roiGeometry = null;
+    let searchResults = [];
+    let selectedScenes = new Set();
+    
+    // Initialize map
+    function initMap() {
+        map = L.map('map').setView([20, 0], 2);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        map.addLayer(drawnItems);
+        
+        // Add drawing control
+        const drawControl = new L.Control.Draw({
+            draw: {
+                polygon: true,
+                polyline: false,
+                rectangle: true,
+                circle: false,
+                marker: false,
+                circlemarker: false
+            },
+            edit: {
+                featureGroup: drawnItems,
+                remove: true
+            }
+        });
+        map.addControl(drawControl);
+        
+        // Handle drawing events
+        map.on(L.Draw.Event.CREATED, function(e) {
+            drawnItems.clearLayers();
+            drawnItems.addLayer(e.layer);
+            updateROI();
+        });
+        
+        map.on(L.Draw.Event.EDITED, updateROI);
+        map.on(L.Draw.Event.DELETED, updateROI);
+    }
+    
+    // Update ROI geometry
+    function updateROI() {
+        const layers = drawnItems.getLayers();
+        if (layers.length > 0) {
+            roiGeometry = layers[0].toGeoJSON().geometry;
+            document.getElementById('roi-status').classList.add('active');
+            document.getElementById('search-btn').disabled = false;
+        } else {
+            roiGeometry = null;
+            document.getElementById('roi-status').classList.remove('active');
+            document.getElementById('search-btn').disabled = true;
+            selectedScenes.clear();
+        }
+    }
+    
+    // Set default dates (last 12 months)
+    function setDefaultDates() {
+        const today = new Date();
+        const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+        document.getElementById('end-date').valueAsDate = today;
+        document.getElementById('start-date').valueAsDate = oneYearAgo;
+    }
+    
+    // Handle satellite change
+    document.getElementById('satellite-select').addEventListener('change', function() {
+        const isSAR = this.value.startsWith('sentinel1');
+        document.getElementById('cloud-section').style.display = isSAR ? 'none' : 'block';
+        document.getElementById('sar-section').style.display = isSAR ? 'block' : 'none';
+    });
+    
+    // Handle cloud slider
+    document.getElementById('cloud-slider').addEventListener('input', function() {
+        document.getElementById('cloud-value').textContent = this.value + '%';
+    });
+    
+    // Search button handler
+    document.getElementById('search-btn').addEventListener('click', async function() {
+        if (!roiGeometry) {
+            alert('Please draw an ROI on the map first');
+            return;
+        }
+        
+        this.disabled = true;
+        const originalText = this.textContent;
+        this.innerHTML = '<span class="loading-spinner"></span> Searching...';
+        
+        try {
+            const response = await fetch('/api/search-stac', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    geometry: roiGeometry,
+                    satellite: document.getElementById('satellite-select').value,
+                    start_date: document.getElementById('start-date').value,
+                    end_date: document.getElementById('end-date').value,
+                    max_cloud: parseInt(document.getElementById('cloud-slider').value),
+                    sar_options: {
+                        vv: document.getElementById('vv-pol')?.checked || false,
+                        vh: document.getElementById('vh-pol')?.checked || false,
+                        orbit_direction: document.getElementById('orbit-direction')?.value || null
+                    }
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                if (data.error.includes('pystac-client')) {
+                    alert('❌ SETUP REQUIRED\n\n' + data.error);
+                } else {
+                    alert('Search error: ' + data.error);
+                }
+                searchResults = [];
+            } else {
+                searchResults = data.features || [];
+                selectedScenes.clear();
+                renderResults();
+            }
+            
+            document.getElementById('results-section').classList.add('active');
+        } catch (error) {
+            console.error('Search failed:', error);
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                alert('❌ Connection Error\n\nCould not reach server. Is the Flask app running?');
+            } else {
+                alert('Search failed: ' + error.message);
+            }
+            searchResults = [];
+        } finally {
+            this.disabled = false;
+            this.textContent = originalText;
+        }
+    });
+    
+    // Render results
+    function renderResults() {
+        const grid = document.getElementById('scenes-grid');
+        const list = document.getElementById('scene-list');
+        const noResults = document.getElementById('no-results');
+        const resultsCount = document.getElementById('results-count');
+        
+        resultsCount.textContent = searchResults.length + ' scene' + (searchResults.length !== 1 ? 's' : '');
+        
+        if (searchResults.length === 0) {
+            noResults.style.display = 'block';
+            grid.innerHTML = '';
+            list.innerHTML = '';
+            return;
+        }
+        
+        noResults.style.display = 'none';
+        grid.innerHTML = '';
+        list.innerHTML = '';
+        
+        searchResults.forEach((scene, idx) => {
+            const props = scene.properties;
+            const id = scene.id || idx;
+            
+            // Grid card
+            const gridCard = document.createElement('div');
+            gridCard.className = 'scene-card';
+            gridCard.dataset.id = id;
+            gridCard.innerHTML = `
+                <div class="scene-thumbnail">
+                    🛰️
+                    <div class="scene-badge">${props.eo_cloud_cover?.toFixed(1) || 'N/A'}% cloud</div>
+                </div>
+                <div class="scene-info">
+                    <div class="scene-date">${props.datetime || props.start_datetime || 'Unknown'}</div>
+                    <div class="scene-meta">
+                        <span>🛰️ ${props.platform_id || 'Unknown'}</span>
+                        ${props.area ? `<span>📐 Coverage: ${(props.area / 1000000).toFixed(2)} km²</span>` : ''}
+                    </div>
+                    <div class="scene-checkbox">
+                        <input type="checkbox" data-id="${id}" class="scene-check" />
+                        <label>Select</label>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(gridCard);
+            
+            // List row
+            const listRow = document.createElement('div');
+            listRow.className = 'scene-row';
+            listRow.dataset.id = id;
+            listRow.innerHTML = `
+                <div class="scene-row-check">
+                    <input type="checkbox" data-id="${id}" class="scene-check" />
+                </div>
+                <div class="scene-row-details">
+                    <div class="scene-row-detail">
+                        <div class="scene-row-label">Date</div>
+                        <div class="scene-row-value">${props.datetime || props.start_datetime || 'Unknown'}</div>
+                    </div>
+                    <div class="scene-row-detail">
+                        <div class="scene-row-label">Platform</div>
+                        <div class="scene-row-value">${props.platform_id || 'Unknown'}</div>
+                    </div>
+                    <div class="scene-row-detail">
+                        <div class="scene-row-label">Cloud Cover</div>
+                        <div class="scene-row-value">${props.eo_cloud_cover?.toFixed(1) || 'N/A'}%</div>
+                    </div>
+                </div>
+                <div class="scene-row-actions">
+                    <button class="action-link" onclick="viewSceneDetails('${id}')">Details</button>
+                </div>
+            `;
+            list.appendChild(listRow);
+        });
+        
+        // Attach checkbox handlers
+        document.querySelectorAll('.scene-check').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const id = this.dataset.id;
+                if (this.checked) {
+                    selectedScenes.add(id);
+                } else {
+                    selectedScenes.delete(id);
+                }
+                updateSceneSelection(id, this.checked);
+                updateActionBar();
+            });
+        });
+    }
+    
+    // Update scene selection UI
+    function updateSceneSelection(id, selected) {
+        document.querySelectorAll(`[data-id="${id}"]`).forEach(el => {
+            if (selected) {
+                el.classList.add('selected');
+            } else {
+                el.classList.remove('selected');
+            }
+        });
+    }
+    
+    // Update action bar visibility
+    function updateActionBar() {
+        const actionBar = document.getElementById('action-bar');
+        const selectedCount = document.getElementById('selected-count');
+        
+        if (selectedScenes.size > 0) {
+            selectedCount.textContent = selectedScenes.size;
+            actionBar.classList.add('active');
+        } else {
+            actionBar.classList.remove('active');
+        }
+    }
+    
+    // View toggle
+    document.querySelectorAll('.view-toggle button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const view = this.dataset.view;
+            document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            if (view === 'grid') {
+                document.getElementById('scenes-grid').classList.add('active');
+                document.getElementById('scene-list').classList.remove('active');
+            } else {
+                document.getElementById('scenes-grid').classList.remove('active');
+                document.getElementById('scene-list').classList.add('active');
+            }
+        });
+    });
+    
+    // Clear selection
+    document.getElementById('clear-selection-btn').addEventListener('click', function() {
+        selectedScenes.clear();
+        document.querySelectorAll('.scene-check').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        document.querySelectorAll('.scene-card, .scene-row').forEach(el => {
+            el.classList.remove('selected');
+        });
+        updateActionBar();
+    });
+    
+    // Prepare download
+    document.getElementById('download-selection-btn').addEventListener('click', async function() {
+        if (selectedScenes.size === 0) return;
+        
+        this.disabled = true;
+        this.innerHTML = '<span class="loading-spinner"></span> Preparing...';
+        
+        try {
+            const sceneIds = Array.from(selectedScenes);
+            
+            // Map scene IDs back to actual scene objects
+            const scenesForDownload = searchResults.filter((s, idx) => {
+                const sceneId = s.id || idx;
+                return sceneIds.includes(sceneId);
+            });
+            
+            // Step 1: Prepare download session
+            const prepareResponse = await fetch('/api/prepare-download', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    scene_ids: sceneIds,
+                    scenes: scenesForDownload
+                })
+            });
+            
+            const prepareData = await prepareResponse.json();
+            if (!prepareData.download_id) {
+                throw new Error(prepareData.error || 'Failed to prepare download');
+            }
+            
+            const downloadId = prepareData.download_id;
+            
+            // Step 2: Start actual STAC download
+            const startResponse = await fetch('/api/start-stac-download', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    download_id: downloadId,
+                    scenes: scenesForDownload,
+                    keep_imagery: false,
+                    auto_analyze: false
+                })
+            });
+            
+            const startData = await startResponse.json();
+            if (startData.error) {
+                throw new Error(startData.error);
+            }
+            
+            // Redirect to progress page
+            window.location.href = `/download-progress?id=${downloadId}`;
+            
+        } catch (error) {
+            alert('Error: ' + error.message);
+            this.disabled = false;
+            this.textContent = '⬇️ Prepare Download';
+        }
+    });
+    
+    // View scene details
+    window.viewSceneDetails = function(id) {
+        const scene = searchResults.find((s, idx) => (s.id || idx) === id);
+        if (scene) {
+            alert('Scene Details:\n\n' + JSON.stringify(scene.properties, null, 2));
+        }
+    };
+    
+    // Initialize
+    initMap();
+    setDefaultDates();
+</script>
+{% endblock %}
