@@ -175,9 +175,9 @@
         color: var(--text-color);
     }
 
-    /* Ensure leaflet controls and draw toolbar are on top and positioned correctly */
-    .leaflet-control, .leaflet-draw-toolbar { z-index: 10000 !important; }
-    .leaflet-draw-toolbar { position: absolute !important; top: 12px !important; left: 12px !important; }
+    /* Ensure leaflet controls are on top. Hide the left-hand draw toolbar (we use helper buttons on top-right). */
+    .leaflet-control { z-index: 10000 !important; }
+    .leaflet-draw-toolbar { display: none !important; }
 
     /* Small helper overlay with explicit draw buttons */
     .map-draw-helper {
