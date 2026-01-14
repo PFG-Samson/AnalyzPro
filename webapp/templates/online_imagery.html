@@ -4,7 +4,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/@leaflet/draw@1.0.4/dist/leaflet.draw.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
 <style>
     .online-imagery-container {
         display: grid;
@@ -18,7 +18,7 @@
         background: var(--card-bg);
         border-radius: 1rem;
         box-shadow: var(--shadow);
-        overflow: hidden;
+        overflow: visible; /* allow map controls to show outside inner bounds */
         position: relative;
     }
     
@@ -174,6 +174,34 @@
         font-size: 0.85rem;
         color: var(--text-color);
     }
+
+    /* Ensure leaflet controls and draw toolbar are on top and positioned correctly */
+    .leaflet-control, .leaflet-draw-toolbar { z-index: 10000 !important; }
+    .leaflet-draw-toolbar { position: absolute !important; top: 12px !important; left: 12px !important; }
+
+    /* Small helper overlay with explicit draw buttons */
+    .map-draw-helper {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(255,255,255,0.95);
+        border-radius: 0.6rem;
+        box-shadow: var(--shadow-lg);
+        padding: 0.5rem;
+        z-index: 10001;
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+    }
+    .map-draw-helper button {
+        border: none;
+        background: var(--bg-color);
+        padding: 0.35rem 0.5rem;
+        border-radius: 0.4rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    .map-draw-helper button:hover { background: #f1f5f9; }
     
     .roi-status.empty {
         display: none;
@@ -572,6 +600,13 @@
     <!-- Map Section -->
     <div class="map-wrapper">
         <div id="map"></div>
+            <!-- Helper overlay for users when draw toolbar is not visible -->
+            <div class="map-draw-helper" id="map-draw-helper" title="Quick draw controls">
+                <button id="start-rect" aria-label="Draw rectangle">▭ Rect</button>
+                <button id="start-poly" aria-label="Draw polygon">⬡ Poly</button>
+                <button id="edit-shape" aria-label="Edit shape">✎ Edit</button>
+                <button id="delete-shape" aria-label="Delete shape">🗑️ Del</button>
+            </div>
         <div class="map-instructions">
             <strong>🗺️ Draw ROI</strong>
             Use the drawing tools in the top-left corner to select your area of interest.
@@ -704,7 +739,7 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@leaflet/draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
     // Initialize state
     let map = null;
@@ -712,6 +747,7 @@
     let roiGeometry = null;
     let searchResults = [];
     let selectedScenes = new Set();
+    let drawControl = null; // exposed so helper buttons can access handlers
     
     // Initialize map
     function initMap() {
@@ -725,7 +761,7 @@
         map.addLayer(drawnItems);
         
         // Add drawing control
-        const drawControl = new L.Control.Draw({
+        drawControl = new L.Control.Draw({
             draw: {
                 polygon: true,
                 polyline: false,
@@ -751,6 +787,87 @@
         map.on(L.Draw.Event.EDITED, updateROI);
         map.on(L.Draw.Event.DELETED, updateROI);
     }
+
+    // Wire helper overlay buttons to the draw toolbar (with logging + robust fallbacks)
+    function wireHelperButtons() {
+        console.log('wireHelperButtons: starting', { drawControl: drawControl, drawnItems: drawnItems });
+
+        const clickToolbarButton = (selectors) => {
+            const list = Array.isArray(selectors) ? selectors : [selectors];
+            for (let s of list) {
+                const el = document.querySelector(s);
+                if (el) {
+                    try { el.click(); }
+                    catch (e) { try { el.dispatchEvent(new MouseEvent('click')); } catch (e2) { console.error('clickToolbarButton dispatch error', e2); } }
+                    console.log('clickToolbarButton: clicked', s, el);
+                    return true;
+                }
+            }
+            console.log('clickToolbarButton: none matched', list);
+            return false;
+        };
+
+        // Helper: attach listener safely
+        const attach = (id, fn) => {
+            const el = document.getElementById(id);
+            if (!el) { console.warn('attach: element not found', id); return; }
+            el.addEventListener('click', fn);
+        };
+
+        attach('start-rect', function(evt) {
+            evt.stopPropagation(); evt.preventDefault();
+            console.log('helper: start-rect clicked', { drawControl });
+            const selectors = ['.leaflet-draw-draw-rectangle', 'a.leaflet-draw-draw-rectangle', '.leaflet-draw-draw-rectangle a', '.leaflet-draw-draw-rectangle button'];
+            try {
+                if (!clickToolbarButton(selectors)) {
+                    const mode = drawControl && drawControl._toolbars && drawControl._toolbars.draw && drawControl._toolbars.draw._modes && (drawControl._toolbars.draw._modes.rectangle || drawControl._toolbars.draw._modes.R);
+                    if (mode && mode.handler) { mode.handler.enable(); console.log('enabled rectangle via drawControl'); }
+                    else if (window.L && window.L.Draw && window.L.Draw.Rectangle) { new L.Draw.Rectangle(map).enable(); console.log('enabled rectangle via L.Draw.Rectangle fallback'); }
+                    else { console.warn('rectangle: no handler available'); }
+                }
+            } catch (e) { console.error('start-rect error', e); }
+        });
+
+        attach('start-poly', function(evt) {
+            evt.stopPropagation(); evt.preventDefault();
+            console.log('helper: start-poly clicked', { drawControl });
+            const selectors = ['.leaflet-draw-draw-polygon', 'a.leaflet-draw-draw-polygon', '.leaflet-draw-draw-polygon a', '.leaflet-draw-draw-polygon button'];
+            try {
+                if (!clickToolbarButton(selectors)) {
+                    const mode = drawControl && drawControl._toolbars && drawControl._toolbars.draw && drawControl._toolbars.draw._modes && (drawControl._toolbars.draw._modes.polygon || drawControl._toolbars.draw._modes.P);
+                    if (mode && mode.handler) { mode.handler.enable(); console.log('enabled polygon via drawControl'); }
+                    else if (window.L && window.L.Draw && window.L.Draw.Polygon) { new L.Draw.Polygon(map).enable(); console.log('enabled polygon via L.Draw.Polygon fallback'); }
+                    else { console.warn('polygon: no handler available'); }
+                }
+            } catch (e) { console.error('start-poly error', e); }
+        });
+
+        attach('edit-shape', function(evt) {
+            evt.stopPropagation(); evt.preventDefault();
+            console.log('helper: edit-shape clicked', { drawControl });
+            const selectors = ['.leaflet-draw-edit-edit', 'a.leaflet-draw-edit-edit', '.leaflet-draw-edit-edit a', '.leaflet-draw-edit-edit button'];
+            try {
+                if (!clickToolbarButton(selectors)) {
+                    const mode = drawControl && drawControl._toolbars && drawControl._toolbars.edit && drawControl._toolbars.edit._modes && (drawControl._toolbars.edit._modes.edit || drawControl._toolbars.edit._modes.E);
+                    if (mode && mode.handler) { mode.handler.enable(); console.log('enabled edit via drawControl'); }
+                    else { console.warn('edit: no handler available'); }
+                }
+            } catch (e) { console.error('edit-shape error', e); }
+        });
+
+        attach('delete-shape', function(evt) {
+            evt.stopPropagation(); evt.preventDefault();
+            console.log('helper: delete-shape clicked', { drawControl });
+            const selectors = ['.leaflet-draw-edit-remove', 'a.leaflet-draw-edit-remove', '.leaflet-draw-edit-remove a', '.leaflet-draw-edit-remove button'];
+            try {
+                if (!clickToolbarButton(selectors)) {
+                    drawnItems.clearLayers();
+                    updateROI();
+                    console.log('delete: cleared layers fallback');
+                }
+            } catch (e) { console.error('delete-shape error', e); }
+        });
+    }
     
     // Update ROI geometry
     function updateROI() {
@@ -773,6 +890,21 @@
         const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
         document.getElementById('end-date').valueAsDate = today;
         document.getElementById('start-date').valueAsDate = oneYearAgo;
+    }
+
+    // After map initialization, wire helper buttons (guarded by timeout to allow drawControl DOM to be created)
+    function postInit() {
+        // try wiring multiple times if draw control not yet available
+        let attempts = 0;
+        const tryWire = () => {
+            attempts += 1;
+            try {
+                wireHelperButtons();
+            } catch (e) {
+                if (attempts < 5) setTimeout(tryWire, 300);
+            }
+        };
+        tryWire();
     }
     
     // Handle satellite change
@@ -1061,5 +1193,6 @@
     // Initialize
     initMap();
     setDefaultDates();
+    postInit();
 </script>
 {% endblock %}
