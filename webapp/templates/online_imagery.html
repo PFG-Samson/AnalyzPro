@@ -200,6 +200,35 @@
         align-items: center;
     }
 
+    /* Map Preview Toggle Button */
+    .map-preview-btn {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        color: var(--text-color);
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+        padding: 4px 8px;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .map-preview-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .map-preview-btn.active {
+        background: var(--secondary-color);
+        color: white;
+        border-color: var(--secondary-color);
+    }
+
     .map-draw-helper button {
         border: none;
         background: var(--bg-color);
@@ -1145,8 +1174,15 @@
                         ${props.area ? `<span>📐 Coverage: ${(props.area / 1000000).toFixed(2)} km²</span>` : ''}
                     </div>
                     <div class="scene-checkbox">
-                        <input type="checkbox" data-id="${id}" class="scene-check" />
-                        <label>Select</label>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" data-id="${id}" class="scene-check" />
+                                <label style="margin:0; font-size: 0.85rem;">Select</label>
+                            </div>
+                            <button class="map-preview-btn" data-id="${id}">
+                                🗺️ View on Map
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1176,12 +1212,69 @@
                 </div>
                 <div class="scene-row-actions">
                     <button class="action-link" onclick="viewSceneDetails('${id}')">Details</button>
+                    <button class="map-preview-btn" data-id="${id}" style="margin-left: 0.5rem;">🗺️ Map</button>
                 </div>
             `;
             list.appendChild(listRow);
         });
 
-        // Attach checkbox handlers
+        attachResultHandlers();
+    }
+
+    let previewLayers = {}; // store L.imageOverlay
+    let footprintLayers = {}; // store L.geoJSON
+
+    // Toggle scene preview on map
+    function toggleScenePreview(id) {
+        const scene = searchResults.find((s, idx) => (s.id || idx) === id);
+        if (!scene) return;
+
+        const btns = document.querySelectorAll(`.map-preview-btn[data-id="${id}"]`);
+
+        if (previewLayers[id]) {
+            // Remove
+            map.removeLayer(previewLayers[id]);
+            map.removeLayer(footprintLayers[id]);
+            delete previewLayers[id];
+            delete footprintLayers[id];
+            btns.forEach(b => b.classList.remove('active'));
+        } else {
+            // Add
+            const props = scene.properties;
+            const bbox = scene.bbox; // [minx, miny, maxx, maxy]
+
+            if (!bbox || !props.preview_url) {
+                alert('No map preview available for this scene');
+                return;
+            }
+
+            // Footprint
+            footprintLayers[id] = L.geoJSON(scene.geometry, {
+                style: {
+                    color: '#e74c3c',
+                    weight: 2,
+                    fillOpacity: 0.1
+                }
+            }).addTo(map);
+
+            // Image Overlay
+            // Leaflet imageOverlay expects [[latMin, lonMin], [latMax, lonMax]] or similar
+            // bbox is [lonMin, latMin, lonMax, latMax]
+            const bounds = [[bbox[1], bbox[0]], [bbox[3], bbox[2]]];
+            previewLayers[id] = L.imageOverlay(props.preview_url, bounds, {
+                opacity: 0.8,
+                interactive: true
+            }).addTo(map);
+
+            // Zoom to fit if requested? Maybe just fly to it
+            map.flyToBounds(bounds, { padding: [20, 20] });
+
+            btns.forEach(b => b.classList.add('active'));
+        }
+    }
+
+    // Attach checkbox and map preview handlers
+    function attachResultHandlers() {
         document.querySelectorAll('.scene-check').forEach(checkbox => {
             checkbox.addEventListener('change', function () {
                 const id = this.dataset.id;
@@ -1194,7 +1287,17 @@
                 updateActionBar();
             });
         });
+
+        document.querySelectorAll('.map-preview-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleScenePreview(this.dataset.id);
+            });
+        });
     }
+
+    // Update renderResults call to use our new attacher
+    // (Search around line 1119 for end of searchResults.forEach)
 
     // Update scene selection UI
     function updateSceneSelection(id, selected) {

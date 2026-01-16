@@ -1535,7 +1535,13 @@ def query_stac_catalog(geometry, satellite='sentinel2', start_date=None, end_dat
         
         props['preview_url'] = preview_url
         
-        results.append({'id': item.id, 'properties': props})
+        results.append({
+            'id': item.id, 
+            'type': 'Feature',
+            'properties': props,
+            'geometry': item.geometry,
+            'bbox': item.bbox
+        })
     
     logger.info(f"STAC search returned {len(results)} results for {satellite}")
     return results
