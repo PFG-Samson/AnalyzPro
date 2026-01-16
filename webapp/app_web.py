@@ -1488,10 +1488,29 @@ def query_stac_catalog(geometry, satellite='sentinel2', start_date=None, end_dat
         props['id'] = item.id
         props['datetime'] = props.get('datetime') or item.datetime.isoformat() if item.datetime else 'Unknown'
         
+        # Normalize metadata for frontend display
+        props['cloud_cover'] = props.get('eo:cloud_cover', props.get('s2:medium_proba_clouds_percentage', 0))
+        
+        # Solar Elevation (for Sentinel-2 it's 90 - Zenith)
+        sun_elev = props.get('view:sun_elevation')
+        if sun_elev is None and 's2:mean_solar_zenith' in props:
+            sun_elev = 90 - props['s2:mean_solar_zenith']
+        props['sun_elevation'] = sun_elev
+        
+        # Nadir Angle
+        props['off_nadir'] = props.get('view:off_nadir', props.get('view:incidence_angle', 0))
+        
+        props['collection'] = item.collection_id
+        props['platform_name'] = props.get('platform', props.get('platform_id', 'Unknown'))
+        props['satellite_name'] = satellite.upper()
+
+        if item.collection_id == 'sentinel-2-l2a':
+             props['platform_name'] = props.get('platform', 'Sentinel-2')
+             props['satellite_name'] = 'SENTINEL-2'
+
         # Filter by cloud cover if optical
         if satellite.startswith('sentinel2') or satellite.startswith('landsat'):
-            cloud_cover = props.get('eo:cloud_cover', 0)
-            if cloud_cover > max_cloud:
+            if props['cloud_cover'] > max_cloud:
                 continue
         
         # Add asset URLs if available

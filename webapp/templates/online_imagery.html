@@ -1135,12 +1135,13 @@
             gridCard.innerHTML = `
                 <div class="scene-thumbnail">
                     ${props.preview_url ? `<img src="${props.preview_url}" alt="Preview" loading="lazy">` : '🛰️'}
-                    <div class="scene-badge">${props.eo_cloud_cover?.toFixed(1) || 'N/A'}% cloud</div>
+                    <div class="scene-badge">${(props.cloud_cover || 0).toFixed(1)}% cloud</div>
                 </div>
                 <div class="scene-info">
                     <div class="scene-date">${props.datetime || props.start_datetime || 'Unknown'}</div>
                     <div class="scene-meta">
-                        <span>🛰️ ${props.platform_id || 'Unknown'}</span>
+                        <span>🛰️ ${props.satellite_name || 'Satellite'}</span>
+                        <span>🚀 ${props.platform_name || 'Unknown'}</span>
                         ${props.area ? `<span>📐 Coverage: ${(props.area / 1000000).toFixed(2)} km²</span>` : ''}
                     </div>
                     <div class="scene-checkbox">
@@ -1166,11 +1167,11 @@
                     </div>
                     <div class="scene-row-detail">
                         <div class="scene-row-label">Platform</div>
-                        <div class="scene-row-value">${props.platform_id || 'Unknown'}</div>
+                        <div class="scene-row-value">${props.platform_name || 'Unknown'}</div>
                     </div>
                     <div class="scene-row-detail">
                         <div class="scene-row-label">Cloud Cover</div>
-                        <div class="scene-row-value">${props.eo_cloud_cover?.toFixed(1) || 'N/A'}%</div>
+                        <div class="scene-row-value">${(props.cloud_cover || 0).toFixed(1)}%</div>
                     </div>
                 </div>
                 <div class="scene-row-actions">
@@ -1326,19 +1327,19 @@
             modalImg.style.display = 'block';
         }
 
-        modalCaption.textContent = `${props.platform_id || 'Satellite'} - ${props.datetime || 'N/A'}`;
+        modalCaption.textContent = `${props.platform_name || 'Satellite'} - ${props.datetime || 'N/A'}`;
 
         // Build metadata display
         let metadataHtml = '<div class="metadata-grid">';
 
         const items = [
-            { label: 'Platform', value: props.platform_id },
+            { label: 'Platform', value: props.platform_name },
             { label: 'Date', value: props.datetime || props.start_datetime },
-            { label: 'Cloud Cover', value: props.eo_cloud_cover ? props.eo_cloud_cover.toFixed(2) + '%' : 'N/A' },
+            { label: 'Cloud Cover', value: typeof props.cloud_cover === 'number' ? props.cloud_cover.toFixed(2) + '%' : 'N/A' },
             { label: 'Instrument', value: props.instruments ? props.instruments.join(', ') : 'N/A' },
             { label: 'Collection', value: props.collection || 'N/A' },
-            { label: 'Sun Elevation', value: props.sun_elevation ? props.sun_elevation.toFixed(2) + '°' : 'N/A' },
-            { label: 'Nadir Angle', value: props['view:off_nadir'] ? props['view:off_nadir'].toFixed(2) + '°' : 'N/A' }
+            { label: 'Sun Elevation', value: typeof props.sun_elevation === 'number' ? props.sun_elevation.toFixed(2) + '°' : 'N/A' },
+            { label: 'Nadir Angle', value: typeof props.off_nadir === 'number' ? props.off_nadir.toFixed(2) + '°' : 'N/A' }
         ];
 
         items.forEach(item => {

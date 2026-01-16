@@ -1,0 +1,39 @@
+{
+  "collection": "sentinel-2-l2a",
+  "properties": {
+    "datetime": "2026-01-16T03:09:59.024000Z",
+    "platform": "Sentinel-2B",
+    "instruments": [
+      "msi"
+    ],
+    "s2:mgrs_tile": "50TQR",
+    "constellation": "Sentinel 2",
+    "s2:granule_id": "S2B_OPER_MSI_L2A_TL_2BPS_20260116T055606_A046290_T50TQR_N05.11",
+    "eo:cloud_cover": 99.704987,
+    "s2:datatake_id": "GS2B_20260116T030959_046290_N05.11",
+    "s2:product_uri": "S2B_MSIL2A_20260116T030959_N0511_R075_T50TQR_20260116T055606.SAFE",
+    "s2:datastrip_id": "S2B_OPER_MSI_L2A_DS_2BPS_20260116T055606_S20260116T030954_N05.11",
+    "s2:product_type": "S2MSI2A",
+    "sat:orbit_state": "descending",
+    "s2:datatake_type": "INS-NOBS",
+    "s2:generation_time": "2026-01-16T05:56:06.000000Z",
+    "sat:relative_orbit": 75,
+    "s2:water_percentage": 0.0,
+    "s2:mean_solar_zenith": 67.5654625889997,
+    "s2:mean_solar_azimuth": 166.493743818792,
+    "s2:processing_baseline": "05.11",
+    "s2:snow_ice_percentage": 0.259948,
+    "s2:vegetation_percentage": 0.0,
+    "s2:thin_cirrus_percentage": 0.619759,
+    "s2:cloud_shadow_percentage": 0.035066,
+    "s2:nodata_pixel_percentage": 99.564767,
+    "s2:unclassified_percentage": 0.0,
+    "s2:not_vegetated_percentage": 0.0,
+    "s2:degraded_msi_data_percentage": 0.0,
+    "s2:high_proba_clouds_percentage": 0.198963,
+    "s2:reflectance_conversion_factor": 1.03392377006473,
+    "s2:medium_proba_clouds_percentage": 98.886263,
+    "s2:saturated_defective_pixel_percentage": 0.0,
+    "proj:code": "EPSG:32650"
+  }
+}
