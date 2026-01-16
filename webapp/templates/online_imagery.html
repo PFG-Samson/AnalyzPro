@@ -13,20 +13,21 @@
         margin-bottom: 2rem;
         height: 600px;
     }
-    
+
     .map-wrapper {
         background: var(--card-bg);
         border-radius: 1rem;
         box-shadow: var(--shadow);
-        overflow: visible; /* allow map controls to show outside inner bounds */
+        overflow: visible;
+        /* allow map controls to show outside inner bounds */
         position: relative;
     }
-    
+
     #map {
         width: 100%;
         height: 100%;
     }
-    
+
     .sidebar {
         display: flex;
         flex-direction: column;
@@ -35,28 +36,28 @@
         overflow-y: auto;
         padding-right: 0.5rem;
     }
-    
+
     .sidebar::-webkit-scrollbar {
         width: 6px;
     }
-    
+
     .sidebar::-webkit-scrollbar-track {
         background: var(--border-color);
         border-radius: 3px;
     }
-    
+
     .sidebar::-webkit-scrollbar-thumb {
         background: var(--secondary-color);
         border-radius: 3px;
     }
-    
+
     .form-section {
         background: var(--card-bg);
         padding: 1.5rem;
         border-radius: 0.75rem;
         box-shadow: var(--shadow);
     }
-    
+
     .form-section h3 {
         font-size: 1rem;
         margin-bottom: 1rem;
@@ -65,15 +66,15 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .form-group {
         margin-bottom: 1rem;
     }
-    
+
     .form-group:last-child {
         margin-bottom: 0;
     }
-    
+
     .form-group label {
         display: block;
         font-size: 0.85rem;
@@ -81,7 +82,7 @@
         margin-bottom: 0.5rem;
         color: var(--text-color);
     }
-    
+
     .form-group select,
     .form-group input[type="date"],
     .form-group input[type="number"] {
@@ -92,22 +93,22 @@
         font-size: 0.85rem;
         transition: border-color 0.3s;
     }
-    
+
     .form-group input:focus,
     .form-group select:focus {
         outline: none;
         border-color: var(--primary-color);
     }
-    
+
     .slider-group {
         margin-top: 0.5rem;
     }
-    
+
     .slider-group input[type="range"] {
         width: 100%;
         cursor: pointer;
     }
-    
+
     .slider-value {
         display: flex;
         justify-content: space-between;
@@ -115,34 +116,34 @@
         color: var(--secondary-color);
         margin-top: 0.5rem;
     }
-    
+
     .slider-value span {
         font-weight: 600;
         color: var(--primary-color);
     }
-    
+
     .checkbox-group {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.5rem;
     }
-    
+
     .checkbox-item {
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .checkbox-item input[type="checkbox"] {
         cursor: pointer;
     }
-    
+
     .checkbox-item label {
         margin: 0;
         cursor: pointer;
         font-weight: 400;
     }
-    
+
     .search-button {
         width: 100%;
         padding: 0.9rem;
@@ -155,17 +156,17 @@
         transition: all 0.3s;
         font-size: 0.95rem;
     }
-    
+
     .search-button:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
     }
-    
+
     .search-button:disabled {
         opacity: 0.6;
         cursor: not-allowed;
     }
-    
+
     .roi-status {
         padding: 0.75rem;
         background: rgba(102, 126, 234, 0.1);
@@ -176,15 +177,20 @@
     }
 
     /* Ensure leaflet controls are on top. Hide the left-hand draw toolbar (we use helper buttons on top-right). */
-    .leaflet-control { z-index: 10000 !important; }
-    .leaflet-draw-toolbar { display: none !important; }
+    .leaflet-control {
+        z-index: 10000 !important;
+    }
+
+    .leaflet-draw-toolbar {
+        display: none !important;
+    }
 
     /* Small helper overlay with explicit draw buttons */
     .map-draw-helper {
         position: absolute;
         top: 12px;
         right: 12px;
-        background: rgba(255,255,255,0.95);
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 0.6rem;
         box-shadow: var(--shadow-lg);
         padding: 0.5rem;
@@ -193,6 +199,7 @@
         gap: 0.4rem;
         align-items: center;
     }
+
     .map-draw-helper button {
         border: none;
         background: var(--bg-color);
@@ -201,40 +208,43 @@
         cursor: pointer;
         font-size: 0.9rem;
     }
-    .map-draw-helper button:hover { background: #f1f5f9; }
-    
+
+    .map-draw-helper button:hover {
+        background: #f1f5f9;
+    }
+
     .roi-status.empty {
         display: none;
     }
-    
+
     .roi-status.active {
         display: block;
         color: var(--success-color);
         border-left-color: var(--success-color);
         background: rgba(16, 185, 129, 0.1);
     }
-    
+
     /* Results Section */
     .results-section {
         margin-top: 2rem;
         display: none;
     }
-    
+
     .results-section.active {
         display: block;
     }
-    
+
     .results-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 1.5rem;
     }
-    
+
     .results-header h2 {
         font-size: 1.5rem;
     }
-    
+
     .results-count {
         background: var(--primary-color);
         color: white;
@@ -243,13 +253,13 @@
         font-weight: 600;
         font-size: 0.9rem;
     }
-    
+
     .view-toggle {
         display: flex;
         gap: 0.5rem;
         margin-bottom: 1rem;
     }
-    
+
     .view-toggle button {
         padding: 0.5rem 1rem;
         border: 2px solid var(--border-color);
@@ -260,20 +270,20 @@
         font-size: 0.9rem;
         transition: all 0.3s;
     }
-    
+
     .view-toggle button.active {
         background: var(--primary-color);
         color: white;
         border-color: var(--primary-color);
     }
-    
+
     .scenes-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
-    
+
     .scene-card {
         background: var(--card-bg);
         border-radius: 0.75rem;
@@ -283,17 +293,17 @@
         cursor: pointer;
         border: 2px solid transparent;
     }
-    
+
     .scene-card:hover {
         transform: translateY(-4px);
         box-shadow: var(--shadow-lg);
     }
-    
+
     .scene-card.selected {
         border-color: var(--primary-color);
         background: rgba(38, 99, 235, 0.02);
     }
-    
+
     .scene-thumbnail {
         width: 100%;
         height: 150px;
@@ -304,7 +314,7 @@
         font-size: 3rem;
         position: relative;
     }
-    
+
     .scene-badge {
         position: absolute;
         top: 0.5rem;
@@ -316,17 +326,17 @@
         font-size: 0.75rem;
         font-weight: 600;
     }
-    
+
     .scene-info {
         padding: 1rem;
     }
-    
+
     .scene-date {
         font-weight: 600;
         color: var(--text-color);
         margin-bottom: 0.5rem;
     }
-    
+
     .scene-meta {
         font-size: 0.8rem;
         color: var(--secondary-color);
@@ -335,7 +345,7 @@
         flex-direction: column;
         gap: 0.25rem;
     }
-    
+
     .scene-checkbox {
         display: flex;
         align-items: center;
@@ -343,21 +353,21 @@
         padding-top: 0.75rem;
         border-top: 1px solid var(--border-color);
     }
-    
+
     .scene-checkbox input[type="checkbox"] {
         cursor: pointer;
         width: 18px;
         height: 18px;
     }
-    
+
     .scene-list {
         display: none;
     }
-    
+
     .scene-list.active {
         display: block;
     }
-    
+
     .scene-row {
         background: var(--card-bg);
         padding: 1rem;
@@ -371,38 +381,38 @@
         border: 2px solid transparent;
         transition: all 0.3s;
     }
-    
+
     .scene-row:hover {
         box-shadow: var(--shadow-lg);
     }
-    
+
     .scene-row.selected {
         border-color: var(--primary-color);
         background: rgba(38, 99, 235, 0.02);
     }
-    
+
     .scene-row-check {
         display: flex;
         align-items: center;
     }
-    
+
     .scene-row-check input[type="checkbox"] {
         cursor: pointer;
         width: 20px;
         height: 20px;
     }
-    
+
     .scene-row-details {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap: 2rem;
     }
-    
+
     .scene-row-detail {
         display: flex;
         flex-direction: column;
     }
-    
+
     .scene-row-label {
         font-size: 0.75rem;
         color: var(--secondary-color);
@@ -410,18 +420,18 @@
         text-transform: uppercase;
         margin-bottom: 0.25rem;
     }
-    
+
     .scene-row-value {
         font-size: 0.95rem;
         color: var(--text-color);
         font-weight: 500;
     }
-    
+
     .scene-row-actions {
         display: flex;
         gap: 0.5rem;
     }
-    
+
     .action-link {
         padding: 0.5rem 1rem;
         background: var(--bg-color);
@@ -433,12 +443,12 @@
         transition: all 0.3s;
         border: none;
     }
-    
+
     .action-link:hover {
         background: var(--primary-color);
         color: white;
     }
-    
+
     .no-results {
         background: var(--card-bg);
         padding: 2rem;
@@ -446,7 +456,7 @@
         text-align: center;
         color: var(--secondary-color);
     }
-    
+
     .action-bar {
         background: var(--card-bg);
         padding: 1.5rem;
@@ -459,24 +469,24 @@
         margin-bottom: 2rem;
         display: none;
     }
-    
+
     .action-bar.active {
         display: grid;
     }
-    
+
     .selection-info {
         color: var(--secondary-color);
     }
-    
+
     .selection-info strong {
         color: var(--primary-color);
     }
-    
+
     .action-buttons {
         display: flex;
         gap: 1rem;
     }
-    
+
     .download-btn {
         padding: 0.8rem 1.5rem;
         background: var(--success-color);
@@ -487,12 +497,12 @@
         cursor: pointer;
         transition: all 0.3s;
     }
-    
+
     .download-btn:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
     }
-    
+
     .clear-btn {
         padding: 0.8rem 1.5rem;
         background: var(--border-color);
@@ -503,12 +513,12 @@
         cursor: pointer;
         transition: all 0.3s;
     }
-    
+
     .clear-btn:hover {
         background: var(--secondary-color);
         color: white;
     }
-    
+
     .loading-spinner {
         display: inline-block;
         width: 20px;
@@ -518,11 +528,13 @@
         border-top-color: white;
         animation: spin 1s linear infinite;
     }
-    
+
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
-    
+
     .map-instructions {
         position: absolute;
         bottom: 1rem;
@@ -536,13 +548,13 @@
         color: var(--text-color);
         z-index: 400;
     }
-    
+
     .map-instructions strong {
         display: block;
         margin-bottom: 0.5rem;
         color: var(--primary-color);
     }
-    
+
     /* Responsive */
     @media (max-width: 1024px) {
         .online-imagery-container {
@@ -550,41 +562,142 @@
             height: auto;
             gap: 1rem;
         }
-        
+
         .sidebar {
             height: auto;
             padding-right: 0;
         }
-        
+
         #map {
             min-height: 400px;
         }
-        
+
         .scene-row-details {
             grid-template-columns: 1fr 1fr;
         }
     }
-    
+
     @media (max-width: 768px) {
         .online-imagery-container {
             gap: 1rem;
         }
-        
+
         .scenes-grid {
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         }
-        
+
         .scene-row-details {
             grid-template-columns: 1fr;
         }
-        
+
         .view-toggle {
             flex-direction: column;
         }
-        
+
         .view-toggle button {
             width: 100%;
         }
+    }
+
+    .scene-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Modal styles */
+    .preview-modal {
+        display: none;
+        position: fixed;
+        z-index: 20000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        overflow: auto;
+        animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    .modal-content {
+        margin: auto;
+        display: block;
+        max-width: 90%;
+        max-height: 70vh;
+        margin-top: 50px;
+        border-radius: 0.5rem;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #modal-caption {
+        margin: auto;
+        display: block;
+        width: 80%;
+        text-align: center;
+        color: #fff;
+        padding: 15px 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    #modal-metadata {
+        width: 80%;
+        margin: 0 auto 50px auto;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2rem;
+        border-radius: 1rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+        color: white;
+    }
+
+    .metadata-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .metadata-label {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .metadata-value {
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        transition: 0.3s;
+        cursor: pointer;
+        z-index: 20001;
+    }
+
+    .modal-close:hover {
+        color: var(--primary-color);
     }
 </style>
 {% endblock %}
@@ -600,19 +713,19 @@
     <!-- Map Section -->
     <div class="map-wrapper">
         <div id="map"></div>
-            <!-- Helper overlay for users when draw toolbar is not visible -->
-            <div class="map-draw-helper" id="map-draw-helper" title="Quick draw controls">
-                <button id="start-rect" aria-label="Draw rectangle">▭ Rect</button>
-                <button id="start-poly" aria-label="Draw polygon">⬡ Poly</button>
-                <button id="edit-shape" aria-label="Edit shape">✎ Edit</button>
-                <button id="delete-shape" aria-label="Delete shape">🗑️ Del</button>
-            </div>
+        <!-- Helper overlay for users when draw toolbar is not visible -->
+        <div class="map-draw-helper" id="map-draw-helper" title="Quick draw controls">
+            <button id="start-rect" aria-label="Draw rectangle">▭ Rect</button>
+            <button id="start-poly" aria-label="Draw polygon">⬡ Poly</button>
+            <button id="edit-shape" aria-label="Edit shape">✎ Edit</button>
+            <button id="delete-shape" aria-label="Delete shape">🗑️ Del</button>
+        </div>
         <div class="map-instructions">
             <strong>🗺️ Draw ROI</strong>
             Use the drawing tools in the top-left corner to select your area of interest.
         </div>
     </div>
-    
+
     <!-- Sidebar Section -->
     <div class="sidebar">
         <!-- Satellite Selection -->
@@ -628,7 +741,7 @@
                 </select>
             </div>
         </div>
-        
+
         <!-- Date Range -->
         <div class="form-section">
             <h3>📅 Date Range</h3>
@@ -641,7 +754,7 @@
                 <input type="date" id="end-date" />
             </div>
         </div>
-        
+
         <!-- Cloud Coverage (Optical only) -->
         <div class="form-section" id="cloud-section">
             <h3>☁️ Cloud Coverage</h3>
@@ -656,7 +769,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- SAR-Specific Options -->
         <div class="form-section" id="sar-section" style="display: none;">
             <h3>📡 SAR Options</h3>
@@ -682,12 +795,12 @@
                 </select>
             </div>
         </div>
-        
+
         <!-- ROI Status -->
         <div class="roi-status empty" id="roi-status">
             ✓ ROI selected (geometry ready)
         </div>
-        
+
         <!-- Search Button -->
         <button class="search-button" id="search-btn" disabled>
             🔎 Search Imagery
@@ -701,28 +814,28 @@
         <h2>Available Scenes</h2>
         <span class="results-count" id="results-count">0 scenes</span>
     </div>
-    
+
     <!-- View Toggle -->
     <div class="view-toggle">
         <button class="active" data-view="grid">🖼️ Grid View</button>
         <button data-view="list">📋 List View</button>
     </div>
-    
+
     <!-- Grid View -->
     <div class="scenes-grid active" id="scenes-grid">
         <!-- Scenes will be rendered here -->
     </div>
-    
+
     <!-- List View -->
     <div class="scene-list" id="scene-list">
         <!-- Scenes will be rendered here -->
     </div>
-    
+
     <!-- No Results -->
     <div class="no-results" id="no-results" style="display: none;">
         No imagery found matching your criteria. Try adjusting your date range or search area.
     </div>
-    
+
     <!-- Action Bar -->
     <div class="action-bar" id="action-bar">
         <div class="selection-info">
@@ -733,6 +846,14 @@
             <button class="download-btn" id="download-selection-btn">⬇️ Prepare Download</button>
         </div>
     </div>
+</div>
+
+<!-- Modal for preview -->
+<div id="preview-modal" class="preview-modal">
+    <span class="modal-close" id="modal-close">&times;</span>
+    <img class="modal-content" id="modal-img">
+    <div id="modal-caption"></div>
+    <div id="modal-metadata"></div>
 </div>
 
 {% endblock %}
@@ -748,18 +869,18 @@
     let searchResults = [];
     let selectedScenes = new Set();
     let drawControl = null; // exposed so helper buttons can access handlers
-    
+
     // Initialize map
     function initMap() {
         map = L.map('map').setView([20, 0], 2);
-        
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(map);
-        
+
         map.addLayer(drawnItems);
-        
+
         // Add drawing control
         drawControl = new L.Control.Draw({
             draw: {
@@ -776,14 +897,14 @@
             }
         });
         map.addControl(drawControl);
-        
+
         // Handle drawing events
-        map.on(L.Draw.Event.CREATED, function(e) {
+        map.on(L.Draw.Event.CREATED, function (e) {
             drawnItems.clearLayers();
             drawnItems.addLayer(e.layer);
             updateROI();
         });
-        
+
         map.on(L.Draw.Event.EDITED, updateROI);
         map.on(L.Draw.Event.DELETED, updateROI);
     }
@@ -814,7 +935,7 @@
             el.addEventListener('click', fn);
         };
 
-        attach('start-rect', function(evt) {
+        attach('start-rect', function (evt) {
             evt.stopPropagation(); evt.preventDefault();
             console.log('helper: start-rect clicked', { drawControl });
             const selectors = ['.leaflet-draw-draw-rectangle', 'a.leaflet-draw-draw-rectangle', '.leaflet-draw-draw-rectangle a', '.leaflet-draw-draw-rectangle button'];
@@ -828,7 +949,7 @@
             } catch (e) { console.error('start-rect error', e); }
         });
 
-        attach('start-poly', function(evt) {
+        attach('start-poly', function (evt) {
             evt.stopPropagation(); evt.preventDefault();
             console.log('helper: start-poly clicked', { drawControl });
             const selectors = ['.leaflet-draw-draw-polygon', 'a.leaflet-draw-draw-polygon', '.leaflet-draw-draw-polygon a', '.leaflet-draw-draw-polygon button'];
@@ -842,7 +963,7 @@
             } catch (e) { console.error('start-poly error', e); }
         });
 
-        attach('edit-shape', function(evt) {
+        attach('edit-shape', function (evt) {
             evt.stopPropagation(); evt.preventDefault();
             console.log('helper: edit-shape clicked', { drawControl });
             const selectors = ['.leaflet-draw-edit-edit', 'a.leaflet-draw-edit-edit', '.leaflet-draw-edit-edit a', '.leaflet-draw-edit-edit button'];
@@ -855,7 +976,7 @@
             } catch (e) { console.error('edit-shape error', e); }
         });
 
-        attach('delete-shape', function(evt) {
+        attach('delete-shape', function (evt) {
             evt.stopPropagation(); evt.preventDefault();
             console.log('helper: delete-shape clicked', { drawControl });
             const selectors = ['.leaflet-draw-edit-remove', 'a.leaflet-draw-edit-remove', '.leaflet-draw-edit-remove a', '.leaflet-draw-edit-remove button'];
@@ -868,7 +989,7 @@
             } catch (e) { console.error('delete-shape error', e); }
         });
     }
-    
+
     // Update ROI geometry
     function updateROI() {
         const layers = drawnItems.getLayers();
@@ -883,7 +1004,7 @@
             selectedScenes.clear();
         }
     }
-    
+
     // Set default dates (last 12 months)
     function setDefaultDates() {
         const today = new Date();
@@ -906,34 +1027,34 @@
         };
         tryWire();
     }
-    
+
     // Handle satellite change
-    document.getElementById('satellite-select').addEventListener('change', function() {
+    document.getElementById('satellite-select').addEventListener('change', function () {
         const isSAR = this.value.startsWith('sentinel1');
         document.getElementById('cloud-section').style.display = isSAR ? 'none' : 'block';
         document.getElementById('sar-section').style.display = isSAR ? 'block' : 'none';
     });
-    
+
     // Handle cloud slider
-    document.getElementById('cloud-slider').addEventListener('input', function() {
+    document.getElementById('cloud-slider').addEventListener('input', function () {
         document.getElementById('cloud-value').textContent = this.value + '%';
     });
-    
+
     // Search button handler
-    document.getElementById('search-btn').addEventListener('click', async function() {
+    document.getElementById('search-btn').addEventListener('click', async function () {
         if (!roiGeometry) {
             alert('Please draw an ROI on the map first');
             return;
         }
-        
+
         this.disabled = true;
         const originalText = this.textContent;
         this.innerHTML = '<span class="loading-spinner"></span> Searching...';
-        
+
         try {
             const response = await fetch('/api/search-stac', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     geometry: roiGeometry,
                     satellite: document.getElementById('satellite-select').value,
@@ -947,9 +1068,9 @@
                     }
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.error) {
                 if (data.error.includes('pystac-client')) {
                     alert('❌ SETUP REQUIRED\n\n' + data.error);
@@ -962,7 +1083,7 @@
                 selectedScenes.clear();
                 renderResults();
             }
-            
+
             document.getElementById('results-section').classList.add('active');
         } catch (error) {
             console.error('Search failed:', error);
@@ -977,38 +1098,43 @@
             this.textContent = originalText;
         }
     });
-    
+
     // Render results
     function renderResults() {
         const grid = document.getElementById('scenes-grid');
         const list = document.getElementById('scene-list');
         const noResults = document.getElementById('no-results');
         const resultsCount = document.getElementById('results-count');
-        
+
         resultsCount.textContent = searchResults.length + ' scene' + (searchResults.length !== 1 ? 's' : '');
-        
+
         if (searchResults.length === 0) {
             noResults.style.display = 'block';
             grid.innerHTML = '';
             list.innerHTML = '';
             return;
         }
-        
+
         noResults.style.display = 'none';
         grid.innerHTML = '';
         list.innerHTML = '';
-        
+
         searchResults.forEach((scene, idx) => {
             const props = scene.properties;
             const id = scene.id || idx;
-            
+
             // Grid card
             const gridCard = document.createElement('div');
             gridCard.className = 'scene-card';
             gridCard.dataset.id = id;
+            gridCard.onclick = (e) => {
+                if (e.target.type !== 'checkbox' && !e.target.classList.contains('scene-check')) {
+                    viewSceneDetails(id);
+                }
+            };
             gridCard.innerHTML = `
                 <div class="scene-thumbnail">
-                    🛰️
+                    ${props.preview_url ? `<img src="${props.preview_url}" alt="Preview" loading="lazy">` : '🛰️'}
                     <div class="scene-badge">${props.eo_cloud_cover?.toFixed(1) || 'N/A'}% cloud</div>
                 </div>
                 <div class="scene-info">
@@ -1024,7 +1150,7 @@
                 </div>
             `;
             grid.appendChild(gridCard);
-            
+
             // List row
             const listRow = document.createElement('div');
             listRow.className = 'scene-row';
@@ -1053,10 +1179,10 @@
             `;
             list.appendChild(listRow);
         });
-        
+
         // Attach checkbox handlers
         document.querySelectorAll('.scene-check').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
+            checkbox.addEventListener('change', function () {
                 const id = this.dataset.id;
                 if (this.checked) {
                     selectedScenes.add(id);
@@ -1068,7 +1194,7 @@
             });
         });
     }
-    
+
     // Update scene selection UI
     function updateSceneSelection(id, selected) {
         document.querySelectorAll(`[data-id="${id}"]`).forEach(el => {
@@ -1079,12 +1205,12 @@
             }
         });
     }
-    
+
     // Update action bar visibility
     function updateActionBar() {
         const actionBar = document.getElementById('action-bar');
         const selectedCount = document.getElementById('selected-count');
-        
+
         if (selectedScenes.size > 0) {
             selectedCount.textContent = selectedScenes.size;
             actionBar.classList.add('active');
@@ -1092,14 +1218,14 @@
             actionBar.classList.remove('active');
         }
     }
-    
+
     // View toggle
     document.querySelectorAll('.view-toggle button').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const view = this.dataset.view;
             document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            
+
             if (view === 'grid') {
                 document.getElementById('scenes-grid').classList.add('active');
                 document.getElementById('scene-list').classList.remove('active');
@@ -1109,9 +1235,9 @@
             }
         });
     });
-    
+
     // Clear selection
-    document.getElementById('clear-selection-btn').addEventListener('click', function() {
+    document.getElementById('clear-selection-btn').addEventListener('click', function () {
         selectedScenes.clear();
         document.querySelectorAll('.scene-check').forEach(checkbox => {
             checkbox.checked = false;
@@ -1121,44 +1247,44 @@
         });
         updateActionBar();
     });
-    
+
     // Prepare download
-    document.getElementById('download-selection-btn').addEventListener('click', async function() {
+    document.getElementById('download-selection-btn').addEventListener('click', async function () {
         if (selectedScenes.size === 0) return;
-        
+
         this.disabled = true;
         this.innerHTML = '<span class="loading-spinner"></span> Preparing...';
-        
+
         try {
             const sceneIds = Array.from(selectedScenes);
-            
+
             // Map scene IDs back to actual scene objects
             const scenesForDownload = searchResults.filter((s, idx) => {
                 const sceneId = s.id || idx;
                 return sceneIds.includes(sceneId);
             });
-            
+
             // Step 1: Prepare download session
             const prepareResponse = await fetch('/api/prepare-download', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     scene_ids: sceneIds,
                     scenes: scenesForDownload
                 })
             });
-            
+
             const prepareData = await prepareResponse.json();
             if (!prepareData.download_id) {
                 throw new Error(prepareData.error || 'Failed to prepare download');
             }
-            
+
             const downloadId = prepareData.download_id;
-            
+
             // Step 2: Start actual STAC download
             const startResponse = await fetch('/api/start-stac-download', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     download_id: downloadId,
                     scenes: scenesForDownload,
@@ -1166,30 +1292,89 @@
                     auto_analyze: false
                 })
             });
-            
+
             const startData = await startResponse.json();
             if (startData.error) {
                 throw new Error(startData.error);
             }
-            
+
             // Redirect to progress page
             window.location.href = `/download-progress?id=${downloadId}`;
-            
+
         } catch (error) {
             alert('Error: ' + error.message);
             this.disabled = false;
             this.textContent = '⬇️ Prepare Download';
         }
     });
-    
+
     // View scene details
-    window.viewSceneDetails = function(id) {
+    window.viewSceneDetails = function (id) {
         const scene = searchResults.find((s, idx) => (s.id || idx) === id);
-        if (scene) {
-            alert('Scene Details:\n\n' + JSON.stringify(scene.properties, null, 2));
+        if (!scene) return;
+
+        const props = scene.properties;
+        const modal = document.getElementById('preview-modal');
+        const modalImg = document.getElementById('modal-img');
+        const modalCaption = document.getElementById('modal-caption');
+        const modalMetadata = document.getElementById('modal-metadata');
+
+        modalImg.src = props.preview_url || '';
+        if (!props.preview_url) {
+            modalImg.style.display = 'none';
+        } else {
+            modalImg.style.display = 'block';
+        }
+
+        modalCaption.textContent = `${props.platform_id || 'Satellite'} - ${props.datetime || 'N/A'}`;
+
+        // Build metadata display
+        let metadataHtml = '<div class="metadata-grid">';
+
+        const items = [
+            { label: 'Platform', value: props.platform_id },
+            { label: 'Date', value: props.datetime || props.start_datetime },
+            { label: 'Cloud Cover', value: props.eo_cloud_cover ? props.eo_cloud_cover.toFixed(2) + '%' : 'N/A' },
+            { label: 'Instrument', value: props.instruments ? props.instruments.join(', ') : 'N/A' },
+            { label: 'Collection', value: props.collection || 'N/A' },
+            { label: 'Sun Elevation', value: props.sun_elevation ? props.sun_elevation.toFixed(2) + '°' : 'N/A' },
+            { label: 'Nadir Angle', value: props['view:off_nadir'] ? props['view:off_nadir'].toFixed(2) + '°' : 'N/A' }
+        ];
+
+        items.forEach(item => {
+            metadataHtml += `
+                <div class="metadata-item">
+                    <div class="metadata-label">${item.label}</div>
+                    <div class="metadata-value">${item.value || 'N/A'}</div>
+                </div>
+            `;
+        });
+
+        metadataHtml += '</div>';
+        modalMetadata.innerHTML = metadataHtml;
+
+        modal.style.display = 'block';
+    };
+
+    // Close modal handlers
+    document.getElementById('modal-close').onclick = function () {
+        document.getElementById('preview-modal').style.display = 'none';
+    };
+
+    window.onclick = function (event) {
+        const modal = document.getElementById('preview-modal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
         }
     };
-    
+
+    // Escape key to close modal
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            document.getElementById('preview-modal').style.display = 'none';
+        }
+    });
+
     // Initialize
     initMap();
     setDefaultDates();

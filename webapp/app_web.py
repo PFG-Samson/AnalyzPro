@@ -20,6 +20,7 @@ from analyz.utils.satellite_preprocessor import SatellitePreprocessor
 from analyz.utils.cog import convert_to_cog
 from analyz.utils.stac_downloader import STACDownloadManager, download_imagery_async
 from webapp.utils.temporary_storage import TemporaryStorageManager
+from webapp.utils.thumbnail_generator import ThumbnailGenerator
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
@@ -45,6 +46,13 @@ download_manager = STACDownloadManager(
 storage_manager = TemporaryStorageManager(
     temp_folder=app.config['TEMP_DOWNLOADS_FOLDER']
 )
+
+# Initialize Thumbnail Generator
+thumbnail_generator = ThumbnailGenerator(
+    cache_dir=Path(app.static_folder) / 'thumbnails' if app.static_folder else Path(__file__).parent / 'static' / 'thumbnails'
+)
+if not (Path(__file__).parent / 'static' / 'thumbnails').exists():
+    (Path(__file__).parent / 'static' / 'thumbnails').mkdir(parents=True, exist_ok=True)
 
 # Download sessions tracking
 download_sessions = {}
@@ -1492,6 +1500,21 @@ def query_stac_catalog(geometry, satellite='sentinel2', start_date=None, end_dat
             'type': asset.media_type,
             'roles': asset.roles
         } for key, asset in item.assets.items()}
+        
+        # Priority for preview sources
+        preview_url = None
+        if 'rendered_preview' in props['assets']:
+            preview_url = props['assets']['rendered_preview']['href']
+        elif 'thumbnail' in props['assets']:
+            preview_url = props['assets']['thumbnail']['href']
+        elif 'overview' in props['assets']:
+            preview_url = props['assets']['overview']['href']
+        elif 'visual' in props['assets']:
+             # Only use visual as preview if it is an overview/thumbnail role
+             if 'overview' in (props['assets']['visual'].get('roles') or []):
+                 preview_url = props['assets']['visual']['href']
+        
+        props['preview_url'] = preview_url
         
         results.append({'id': item.id, 'properties': props})
     
